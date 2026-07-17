@@ -187,15 +187,41 @@ export default function App() {
         }
 
         const isMasterAdmin = userEmail === 'sdn7pedungan63@gmail.com';
-        const isRegistered = isMasterAdmin || empList.some(emp => {
+        const matchedEmp = empList.find(emp => {
           const colG = (emp.googleEmail || emp.checkInStart || '').trim().toLowerCase();
           const colD = (emp.email || '').trim().toLowerCase();
           return colG === userEmail || colD === userEmail;
         });
 
-        if (!isRegistered) {
+        if (!isMasterAdmin && !matchedEmp) {
           await logout();
-          throw new Error(`Gagal Menghubungkan: Akun Google Anda (${userEmail}) belum terdaftar pada sheet Pegawai Kolom G. Silakan hubungi operator sekolah.`);
+          throw new Error(`Gagal Menghubungkan: Akun Google Anda (${userEmail}) belum terdaftar pada sheet Pegawai Kolom G. Silakan hubungi operator sekolah untuk mendaftarkan email Google Anda.`);
+        }
+
+        let loggedInAcc: UserAccount;
+        if (isMasterAdmin) {
+          const ketutEmp = empList.find(emp => emp.role.toLowerCase().includes('kepala'));
+          loggedInAcc = {
+            username: userEmail,
+            sandi: '',
+            nip: ketutEmp ? ketutEmp.id : 'admin',
+            role: 'admin',
+            name: ketutEmp ? ketutEmp.name : 'Administrator Sekolah'
+          };
+        } else if (matchedEmp) {
+          const isAdm = matchedEmp.role.toLowerCase().includes('kepala') || 
+                        matchedEmp.role.toLowerCase().includes('admin') || 
+                        matchedEmp.role.toLowerCase().includes('operator');
+          loggedInAcc = {
+            username: userEmail,
+            sandi: '',
+            nip: matchedEmp.id,
+            role: isAdm ? 'admin' : 'pegawai',
+            name: matchedEmp.name
+          };
+        } else {
+          await logout();
+          throw new Error('Gagal mengidentifikasi data pegawai Anda.');
         }
 
         // Save state on success
@@ -205,13 +231,16 @@ export default function App() {
         localStorage.setItem('sipeg_google_access_token', targetToken);
         setUser(result.user);
         setEmployees(empList);
+        setLoggedInAccount(loggedInAcc);
+        localStorage.setItem('sipeg_logged_in_account', JSON.stringify(loggedInAcc));
+        setNeedsAuth(false);
 
         // Clear any old UNAUTHORIZED error
         if (dataError?.includes('UNAUTHORIZED')) {
           setDataError(null);
         }
       } else {
-        throw new Error('Otorisasi Google diperlukan untuk memuat database spreadsheet.');
+        throw new Error('Otorisasi Google diperlukan untuk masuk ke aplikasi.');
       }
     } catch (err: any) {
       console.error(err);
@@ -221,7 +250,7 @@ export default function App() {
       } else if (errStr.includes('configuration-not-found') || err.code === 'auth/configuration-not-found') {
         setLoginError('auth/configuration-not-found');
       } else {
-        setLoginError(err.message || 'Gagal terhubung dengan akun Google Anda. Pastikan Anda mengizinkan semua akses.');
+        setLoginError(err.message || 'Gagal terhubung dengan akun Google Anda. Pastikan Anda mendaftarkan email Anda di spreadsheet.');
       }
     } finally {
       setIsLoggingIn(false);
@@ -260,109 +289,12 @@ export default function App() {
     }
     
     setLoginError(null);
-    setUsernameInput('');
-    setPasswordInput('');
   };
 
-  const handleLogin = async (e: React.FormEvent) => {
-    e.preventDefault();
-    if (!usernameInput.trim() || !passwordInput.trim()) {
-      setLoginError('Username dan Sandi wajib diisi.');
-      return;
-    }
-
-    setIsLoggingIn(true);
-    setLoginError(null);
-
-    try {
-      let currentToken = accessToken;
-
-      // 1. If we don't have an access token, prompt Google Sign-in to authorize Sheets integration
-      if (!currentToken) {
-        const result = await googleSignIn();
-        if (result) {
-          currentToken = result.accessToken;
-          setAccessTokenState(result.accessToken);
-          localStorage.setItem('sipeg_google_access_token', result.accessToken);
-          setUser(result.user);
-        } else {
-          throw new Error('Otorisasi Google diperlukan untuk memuat database spreadsheet.');
-        }
-      }
-
-      // 2. If spreadsheetId is not set, only allow the default setup admin
-      if (!spreadsheetId) {
-        if (usernameInput.trim() === 'admin' && passwordInput.trim() === 'admin123') {
-          const defaultAdmin: UserAccount = {
-            username: 'admin',
-            sandi: 'admin123',
-            nip: 'admin',
-            role: 'admin',
-            name: 'Administrator'
-          };
-          setLoggedInAccount(defaultAdmin);
-          localStorage.setItem('sipeg_logged_in_account', JSON.stringify(defaultAdmin));
-          setNeedsAuth(false);
-          return;
-        } else {
-          throw new Error('Database belum diatur. Silakan masuk menggunakan username "admin" dan sandi "admin123" untuk masuk ke setup awal database.');
-        }
-      }
-
-      // 3. Load user accounts from the spreadsheet
-      try {
-        const accounts = await loadUserAccounts(spreadsheetId, currentToken);
-        const matched = accounts.find(
-          acc => acc.username.toLowerCase() === usernameInput.trim().toLowerCase() && acc.sandi === passwordInput.trim()
-        );
-
-        if (matched) {
-          // If we are online (not offline_token), verify that the connected Google Account matches this employee's registered Column G
-          if (currentToken !== 'offline_token') {
-            const googleUserEmail = (auth.currentUser?.email || user?.email || '').trim().toLowerCase();
-            const isMasterAdmin = googleUserEmail === 'sdn7pedungan63@gmail.com';
-
-            if (!isMasterAdmin && matched.role !== 'admin') {
-              const empList = employees.length > 0 ? employees : await loadEmployees(spreadsheetId, currentToken);
-              const emp = empList.find(e => e.id === matched.nip);
-              if (emp) {
-                const colG = (emp.googleEmail || emp.checkInStart || '').trim().toLowerCase();
-                const colD = (emp.email || '').trim().toLowerCase();
-                const isMatch = colG === googleUserEmail || colD === googleUserEmail;
-
-                if (!isMatch) {
-                  throw new Error(`Username "${matched.username}" terdaftar atas nama ${emp.name}, namun akun Google yang terhubung saat ini adalah "${googleUserEmail}". Akun Google Anda tidak sesuai dengan data pegawai Kolom G.`);
-                }
-              }
-            }
-          }
-
-          setLoggedInAccount(matched);
-          localStorage.setItem('sipeg_logged_in_account', JSON.stringify(matched));
-          setNeedsAuth(false);
-        } else {
-          setLoginError('Username atau Sandi salah.');
-        }
-      } catch (fetchErr: any) {
-        console.warn('Otorisasi Google Sheets kedaluwarsa atau bermasalah.', fetchErr);
-        // Clear expired token
-        setAccessTokenState(null);
-        localStorage.removeItem('sipeg_google_access_token');
-        throw new Error('Sesi Google Sheets Anda telah kedaluwarsa atau tidak valid. Silakan hubungkan ulang akun Google Anda terlebih dahulu.');
-      }
-    } catch (err: any) {
-      console.error(err);
-      const errStr = String(err.message || err.code || err);
-      if (errStr.includes('unauthorized-domain') || err.code === 'auth/unauthorized-domain') {
-        setLoginError('auth/unauthorized-domain');
-      } else if (errStr.includes('configuration-not-found') || err.code === 'auth/configuration-not-found') {
-        setLoginError('auth/configuration-not-found');
-      } else {
-        setLoginError(err.message || 'Gagal login. Pastikan Anda memiliki koneksi internet dan izin Google Sheets valid.');
-      }
-    } finally {
-      setIsLoggingIn(false);
-    }
+  const handleSelectOfflineAccount = (acc: UserAccount) => {
+    setLoggedInAccount(acc);
+    localStorage.setItem('sipeg_logged_in_account', JSON.stringify(acc));
+    setNeedsAuth(false);
   };
 
   const handleLogout = () => {
@@ -579,7 +511,7 @@ export default function App() {
             <div>
               <h2 className="text-2xl font-black text-slate-800 tracking-tight uppercase">Login Pegawai</h2>
               <p className="text-xs text-slate-500 mt-2 leading-relaxed">
-                Silakan masuk menggunakan kombinasi <strong>Username</strong> dan <strong>Sandi</strong> yang telah didaftarkan pada Google Spreadsheet.
+                Masuk ke dalam aplikasi secara instan dan aman menggunakan Akun Google Anda yang telah terdaftar di database sekolah.
               </p>
             </div>
 
@@ -642,8 +574,35 @@ export default function App() {
                       Mode Tanpa Google Aktif
                     </span>
                     <p className="text-[11px] leading-relaxed text-slate-600">
-                      Aplikasi berjalan offline. Semua perubahan data akan disimpan di memori browser ini (localStorage).
+                      Silakan pilih akun di bawah ini untuk masuk ke portal:
                     </p>
+                  </div>
+                )}
+
+                {accessToken === 'offline_token' ? (
+                  <div className="space-y-2 max-h-[300px] overflow-y-auto pr-1">
+                    {[
+                      { username: "ketut", sandi: "", nip: "196512311988031001", role: "admin", name: "Drs. Ketut Pedungan", desc: "Kepala Sekolah (Admin)" },
+                      { username: "budi", sandi: "", nip: "199001012020121001", role: "pegawai", name: "Budi Santoso, S.Pd.", desc: "Guru Kelas IV (Pegawai)" },
+                      { username: "dewi", sandi: "", nip: "198505122015042002", role: "pegawai", name: "Dewi Lestari, M.Pd.", desc: "Guru Matematika (Pegawai)" },
+                      { username: "wayan", sandi: "", nip: "197808202008011003", role: "pegawai", name: "I Wayan Sudiarta", desc: "Staf Tata Usaha (Pegawai)" }
+                    ].map((acc, i) => (
+                      <button
+                        key={i}
+                        type="button"
+                        onClick={() => handleSelectOfflineAccount(acc)}
+                        className="w-full text-left p-3 bg-white hover:bg-slate-50 border border-slate-200 rounded-xl transition-all cursor-pointer hover:border-blue-300 hover:shadow-sm flex items-center justify-between"
+                      >
+                        <div>
+                          <p className="font-bold text-xs text-slate-800">{acc.name}</p>
+                          <p className="text-[10px] text-slate-500 mt-0.5">{acc.desc}</p>
+                        </div>
+                        <span className="text-[9px] bg-slate-100 px-2 py-0.5 rounded font-bold uppercase text-slate-600">
+                          {acc.role}
+                        </span>
+                      </button>
+                    ))}
+
                     <button
                       type="button"
                       onClick={() => {
@@ -652,124 +611,57 @@ export default function App() {
                         localStorage.removeItem('sipeg_google_access_token');
                         localStorage.removeItem('absensi_spreadsheet_id');
                       }}
-                      className="text-[10px] text-blue-600 hover:text-blue-800 font-bold underline cursor-pointer pt-0.5"
+                      className="text-xs text-blue-600 hover:text-blue-800 font-bold underline cursor-pointer block text-center w-full pt-2"
                     >
                       Hubungkan Kembali ke Google
                     </button>
                   </div>
-                )}
-
-                {accessToken && accessToken !== 'offline_token' && (
-                  <div className="p-3 bg-blue-50 border border-blue-100 rounded-xl flex items-center justify-between text-xs text-blue-800 shadow-sm" id="google-connected-badge">
-                    <div className="flex items-center gap-2 overflow-hidden">
-                      <div className="w-2 h-2 rounded-full bg-emerald-500 animate-pulse shrink-0"></div>
-                      <div className="overflow-hidden">
-                        <p className="font-extrabold text-[10px] uppercase tracking-wide text-blue-900">Google Terhubung</p>
-                        <p className="text-[10px] text-slate-500 truncate max-w-[200px]" title={auth.currentUser?.email || user?.email || ''}>
-                          {auth.currentUser?.email || user?.email || 'Akun Google Aktif'}
-                        </p>
+                ) : (
+                  <div className="space-y-4">
+                    <div className="p-3 bg-blue-50 border border-blue-100 rounded-xl flex items-center justify-between text-xs text-blue-800 shadow-sm" id="google-connected-badge">
+                      <div className="flex items-center gap-2 overflow-hidden">
+                        <div className="w-2 h-2 rounded-full bg-emerald-500 animate-pulse shrink-0"></div>
+                        <div className="overflow-hidden">
+                          <p className="font-extrabold text-[10px] uppercase tracking-wide text-blue-900">Google Terhubung</p>
+                          <p className="text-[10px] text-slate-500 truncate max-w-[200px]" title={auth.currentUser?.email || user?.email || ''}>
+                            {auth.currentUser?.email || user?.email || 'Akun Google Aktif'}
+                          </p>
+                        </div>
                       </div>
-                    </div>
-                    <button
-                      type="button"
-                      onClick={async () => {
-                        await logout();
-                        setAccessTokenState(null);
-                        setSpreadsheetId(null);
-                        localStorage.removeItem('sipeg_google_access_token');
-                        localStorage.removeItem('absensi_spreadsheet_id');
-                      }}
-                      className="px-2 py-1 text-[10px] bg-white hover:bg-red-50 text-red-600 hover:text-red-700 font-bold rounded-lg transition-colors border border-red-200 cursor-pointer shrink-0 active:scale-95"
-                      id="btn-disconnect-google-form"
-                    >
-                      Putuskan
-                    </button>
-                  </div>
-                )}
-
-                <form onSubmit={handleLogin} className="space-y-4 w-full">
-                  <div>
-                    <label className="block text-[10px] font-bold text-slate-500 uppercase tracking-wider mb-1.5 pl-1">
-                      Username
-                    </label>
-                    <div className="relative">
-                      <span className="absolute inset-y-0 left-0 pl-3 flex items-center text-slate-400">
-                        <UserCheck className="w-4 h-4" />
-                      </span>
-                      <input
-                        type="text"
-                        value={usernameInput}
-                        onChange={(e) => setUsernameInput(e.target.value)}
-                        placeholder="Masukkan username Anda"
-                        className="w-full pl-9 pr-3 py-2 bg-slate-50 border border-slate-200 rounded-lg text-xs focus:outline-none focus:border-blue-500 focus:bg-white transition-all text-slate-700"
-                        required
-                        disabled={isLoggingIn}
-                        id="login-username"
-                      />
-                    </div>
-                  </div>
-
-                  <div>
-                    <label className="block text-[10px] font-bold text-slate-500 uppercase tracking-wider mb-1.5 pl-1">
-                      Sandi (Password)
-                    </label>
-                    <div className="relative">
-                      <span className="absolute inset-y-0 left-0 pl-3 flex items-center text-slate-400">
-                        <KeyRound className="w-4 h-4" />
-                      </span>
-                      <input
-                        type={showPassword ? "text" : "password"}
-                        value={passwordInput}
-                        onChange={(e) => setPasswordInput(e.target.value)}
-                        placeholder="••••••••"
-                        className="w-full pl-9 pr-10 py-2 bg-slate-50 border border-slate-200 rounded-lg text-xs focus:outline-none focus:border-blue-500 focus:bg-white transition-all text-slate-700"
-                        required
-                        disabled={isLoggingIn}
-                        id="login-password"
-                      />
                       <button
                         type="button"
-                        onClick={() => setShowPassword(!showPassword)}
-                        className="absolute inset-y-0 right-0 pr-3 flex items-center text-slate-400 hover:text-slate-600 transition-colors"
-                        title={showPassword ? "Sembunyikan Sandi" : "Tampilkan Sandi"}
+                        onClick={async () => {
+                          await logout();
+                          setAccessTokenState(null);
+                          setSpreadsheetId(null);
+                          localStorage.removeItem('sipeg_google_access_token');
+                          localStorage.removeItem('absensi_spreadsheet_id');
+                        }}
+                        className="px-2 py-1 text-[10px] bg-white hover:bg-red-50 text-red-600 hover:text-red-700 font-bold rounded-lg transition-colors border border-red-200 cursor-pointer shrink-0 active:scale-95"
+                        id="btn-disconnect-google-form"
                       >
-                        {showPassword ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
+                        Putuskan
                       </button>
                     </div>
+
+                    <div className="p-4 bg-amber-50 border border-amber-100 rounded-xl text-xs text-amber-950 space-y-1">
+                      <p className="font-bold">Menghubungkan Akun Pegawai...</p>
+                      <p className="text-[11px] leading-relaxed text-slate-600">
+                        Sistem sedang memverifikasi email Google Anda dan mencocokkannya dengan database pegawai. Mohon tunggu sejenak.
+                      </p>
+                    </div>
                   </div>
-
-                  {renderLoginError()}
-
-                  <button
-                    type="submit"
-                    disabled={isLoggingIn}
-                    className="w-full flex items-center justify-center gap-2 px-4 py-2.5 bg-blue-600 hover:bg-blue-700 text-white rounded-lg text-xs font-bold transition-all disabled:opacity-50 cursor-pointer shadow-sm active:scale-[0.98]"
-                    id="btn-login-submit"
-                  >
-                    {isLoggingIn ? (
-                      <>
-                        <Loader2 className="w-3.5 h-3.5 animate-spin" />
-                        <span>Mengecek & Menyinkronkan...</span>
-                      </>
-                    ) : (
-                      <span>Masuk Aplikasi</span>
-                    )}
-                  </button>
-                </form>
+                )}
               </div>
             )}
 
             <div className="p-4 bg-blue-50/70 rounded-xl border border-blue-100 flex flex-col gap-1.5 text-[11px] leading-relaxed text-slate-500">
               <span className="font-bold text-slate-700 flex items-center gap-1.5 uppercase tracking-wide">
                 <Info className="w-3.5 h-3.5 text-blue-600" />
-                💡 Catatan Otorisasi:
+                💡 Petunjuk Akses:
               </span>
               <p>
-                Sistem absensi ini terintegrasi langsung dengan database Google Spreadsheet.
-                Saat pertama kali menekan <strong>Masuk Aplikasi</strong>, Google akan meminta Anda memberikan otorisasi akses ke spreadsheet.
-              </p>
-              <p className="border-t border-blue-100/60 pt-1.5 mt-0.5 text-slate-400 text-[10px]">
-                Hubungi administrator sekolah jika belum memiliki akun.
+                Sistem absensi ini tidak lagi membutuhkan username & password. Pegawai cukup menekan tombol <strong>Hubungkan Akun Google</strong> menggunakan email yang telah didaftarkan operator sekolah di sheet Pegawai Kolom G.
               </p>
             </div>
           </div>
