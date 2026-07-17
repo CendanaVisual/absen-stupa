@@ -7,7 +7,7 @@ import {
 } from 'lucide-react';
 import { User } from 'firebase/auth';
 import firebaseConfigDefault from '../firebase-applet-config.json';
-import { initAuth, googleSignIn, logout, setAccessToken } from './lib/firebase';
+import { initAuth, googleSignIn, logout, setAccessToken, auth } from './lib/firebase';
 import { loadEmployees, loadAttendance, ensureSheetsAndHeaders, loadLeaveRequests, loadUserAccounts } from './lib/sheets';
 import { Employee, AttendanceRecord, SchoolConfig, UserAccount } from './types';
 import SetupSpreadsheet from './components/SetupSpreadsheet';
@@ -62,7 +62,12 @@ export default function App() {
 
   // App configurations
   const [spreadsheetId, setSpreadsheetId] = useState<string | null>(() => {
-    return localStorage.getItem('absensi_spreadsheet_id');
+    const saved = localStorage.getItem('absensi_spreadsheet_id');
+    if (!saved) {
+      localStorage.setItem('absensi_spreadsheet_id', '1o9UXa4QZiQAJer-uFsxMXlTCaZkNjhQHNqW_AQWOqgc');
+      return '1o9UXa4QZiQAJer-uFsxMXlTCaZkNjhQHNqW_AQWOqgc';
+    }
+    return saved;
   });
 
   const [schoolConfig, setSchoolConfig] = useState<SchoolConfig>(() => {
@@ -120,8 +125,18 @@ export default function App() {
       setAttendance(attList);
       setLeaveRequests(leaveList);
     } catch (err: any) {
-      console.error(err);
-      setDataError(err.message || 'Gagal memuat data dari Google Sheets. Pastikan ID Spreadsheet valid.');
+      console.warn(err);
+      const isUnauthorized = String(err.message || '').includes('UNAUTHORIZED');
+      if (isUnauthorized) {
+        setAccessTokenState(null);
+        localStorage.removeItem('sipeg_google_access_token');
+        setLoggedInAccount(null);
+        localStorage.removeItem('sipeg_logged_in_account');
+        setNeedsAuth(true);
+        setLoginError('Sesi Google Sheets Anda telah kedaluwarsa atau tidak valid. Silakan hubungkan ulang akun Google Anda.');
+      } else {
+        setDataError(err.message || 'Gagal memuat data dari Google Sheets. Pastikan ID Spreadsheet valid.');
+      }
     } finally {
       setDataLoading(false);
     }
@@ -156,9 +171,41 @@ export default function App() {
     try {
       const result = await googleSignIn();
       if (result) {
-        setAccessTokenState(result.accessToken);
-        localStorage.setItem('sipeg_google_access_token', result.accessToken);
+        const targetToken = result.accessToken;
+        const targetId = spreadsheetId || '1o9UXa4QZiQAJer-uFsxMXlTCaZkNjhQHNqW_AQWOqgc';
+        const userEmail = (result.user.email || '').trim().toLowerCase();
+
+        // Load employees to verify registered Google email in Column G
+        let empList: Employee[] = [];
+        try {
+          await ensureSheetsAndHeaders(targetId, targetToken, 'sdn7pedungan63@gmail.com');
+          empList = await loadEmployees(targetId, targetToken);
+        } catch (loadErr: any) {
+          console.error("Gagal membaca database saat memverifikasi akun Google:", loadErr);
+          await logout();
+          throw new Error('Gagal menghubungkan: ID Spreadsheet tidak valid atau Anda tidak memiliki izin akses.');
+        }
+
+        const isMasterAdmin = userEmail === 'sdn7pedungan63@gmail.com';
+        const isRegistered = isMasterAdmin || empList.some(emp => {
+          const colG = (emp.googleEmail || emp.checkInStart || '').trim().toLowerCase();
+          const colD = (emp.email || '').trim().toLowerCase();
+          return colG === userEmail || colD === userEmail;
+        });
+
+        if (!isRegistered) {
+          await logout();
+          throw new Error(`Gagal Menghubungkan: Akun Google Anda (${userEmail}) belum terdaftar pada sheet Pegawai Kolom G. Silakan hubungi operator sekolah.`);
+        }
+
+        // Save state on success
+        setSpreadsheetId(targetId);
+        localStorage.setItem('absensi_spreadsheet_id', targetId);
+        setAccessTokenState(targetToken);
+        localStorage.setItem('sipeg_google_access_token', targetToken);
         setUser(result.user);
+        setEmployees(empList);
+
         // Clear any old UNAUTHORIZED error
         if (dataError?.includes('UNAUTHORIZED')) {
           setDataError(null);
@@ -270,6 +317,26 @@ export default function App() {
         );
 
         if (matched) {
+          // If we are online (not offline_token), verify that the connected Google Account matches this employee's registered Column G
+          if (currentToken !== 'offline_token') {
+            const googleUserEmail = (auth.currentUser?.email || user?.email || '').trim().toLowerCase();
+            const isMasterAdmin = googleUserEmail === 'sdn7pedungan63@gmail.com';
+
+            if (!isMasterAdmin && matched.role !== 'admin') {
+              const empList = employees.length > 0 ? employees : await loadEmployees(spreadsheetId, currentToken);
+              const emp = empList.find(e => e.id === matched.nip);
+              if (emp) {
+                const colG = (emp.googleEmail || emp.checkInStart || '').trim().toLowerCase();
+                const colD = (emp.email || '').trim().toLowerCase();
+                const isMatch = colG === googleUserEmail || colD === googleUserEmail;
+
+                if (!isMatch) {
+                  throw new Error(`Username "${matched.username}" terdaftar atas nama ${emp.name}, namun akun Google yang terhubung saat ini adalah "${googleUserEmail}". Akun Google Anda tidak sesuai dengan data pegawai Kolom G.`);
+                }
+              }
+            }
+          }
+
           setLoggedInAccount(matched);
           localStorage.setItem('sipeg_logged_in_account', JSON.stringify(matched));
           setNeedsAuth(false);
@@ -588,6 +655,34 @@ export default function App() {
                       className="text-[10px] text-blue-600 hover:text-blue-800 font-bold underline cursor-pointer pt-0.5"
                     >
                       Hubungkan Kembali ke Google
+                    </button>
+                  </div>
+                )}
+
+                {accessToken && accessToken !== 'offline_token' && (
+                  <div className="p-3 bg-blue-50 border border-blue-100 rounded-xl flex items-center justify-between text-xs text-blue-800 shadow-sm" id="google-connected-badge">
+                    <div className="flex items-center gap-2 overflow-hidden">
+                      <div className="w-2 h-2 rounded-full bg-emerald-500 animate-pulse shrink-0"></div>
+                      <div className="overflow-hidden">
+                        <p className="font-extrabold text-[10px] uppercase tracking-wide text-blue-900">Google Terhubung</p>
+                        <p className="text-[10px] text-slate-500 truncate max-w-[200px]" title={auth.currentUser?.email || user?.email || ''}>
+                          {auth.currentUser?.email || user?.email || 'Akun Google Aktif'}
+                        </p>
+                      </div>
+                    </div>
+                    <button
+                      type="button"
+                      onClick={async () => {
+                        await logout();
+                        setAccessTokenState(null);
+                        setSpreadsheetId(null);
+                        localStorage.removeItem('sipeg_google_access_token');
+                        localStorage.removeItem('absensi_spreadsheet_id');
+                      }}
+                      className="px-2 py-1 text-[10px] bg-white hover:bg-red-50 text-red-600 hover:text-red-700 font-bold rounded-lg transition-colors border border-red-200 cursor-pointer shrink-0 active:scale-95"
+                      id="btn-disconnect-google-form"
+                    >
+                      Putuskan
                     </button>
                   </div>
                 )}

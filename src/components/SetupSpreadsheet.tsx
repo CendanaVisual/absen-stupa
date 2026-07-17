@@ -13,7 +13,7 @@ export default function SetupSpreadsheet({
   userEmail,
   onSpreadsheetConfigured,
 }: SetupSpreadsheetProps) {
-  const [spreadsheetInput, setSpreadsheetInput] = useState('');
+  const [spreadsheetInput, setSpreadsheetInput] = useState('1o9UXa4QZiQAJer-uFsxMXlTCaZkNjhQHNqW_AQWOqgc');
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
 

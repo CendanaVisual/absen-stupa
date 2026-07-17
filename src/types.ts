@@ -3,6 +3,7 @@ export interface Employee {
   name: string;
   role: string; // Jabatan (e.g., Kepala Sekolah, Guru, Staf)
   email: string; // Used to match with Google Account email
+  googleEmail?: string; // Registered Google Account Email (from Column G)
   photoUrl?: string; // profile photo URL or base64 string
   baseSalary?: number; // Base monthly salary
   checkInStart?: string;    // Override HH:MM

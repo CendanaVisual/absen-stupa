@@ -387,6 +387,7 @@ export async function loadEmployees(spreadsheetId: string, accessToken: string):
       name: String(row[1] || '').trim(),
       role: String(row[2] || '').trim(),
       email: String(row[3] || '').trim().toLowerCase(),
+      googleEmail: row[6] ? String(row[6]).trim().toLowerCase() : undefined, // Kolom G!
       photoUrl: row[4] ? String(row[4]).trim() : undefined,
       baseSalary: row[5] ? Number(row[5]) : undefined,
       checkInStart: row[6] ? String(row[6]).trim() : undefined,
