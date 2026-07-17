@@ -249,6 +249,10 @@ export default function App() {
         setLoginError('auth/unauthorized-domain');
       } else if (errStr.includes('configuration-not-found') || err.code === 'auth/configuration-not-found') {
         setLoginError('auth/configuration-not-found');
+      } else if (errStr.includes('popup-closed-by-user') || err.code === 'auth/popup-closed-by-user') {
+        setLoginError('Proses masuk dibatalkan karena jendela pilihan akun Google ditutup sebelum selesai. Silakan hubungkan kembali akun Google Anda.');
+      } else if (errStr.includes('popup-blocked') || err.code === 'auth/popup-blocked') {
+        setLoginError('Jendela login Google diblokir oleh browser Anda. Harap izinkan popup pada browser Anda untuk dapat masuk.');
       } else {
         setLoginError(err.message || 'Gagal terhubung dengan akun Google Anda. Pastikan Anda mendaftarkan email Anda di spreadsheet.');
       }
