@@ -788,12 +788,18 @@ export default function App() {
         )}
 
         {dataError && (
-          <div className="mb-4 p-4 bg-red-50 border border-red-200 rounded-xl flex items-start gap-2.5 text-xs text-red-800 shadow-sm">
+          <div className="mb-4 p-4 bg-red-50 border border-red-200 rounded-xl flex items-start gap-2.5 text-xs text-red-800 shadow-sm" id="sync-error-banner">
             <Info className="w-4 h-4 shrink-0 text-red-600 mt-0.5" />
             <div className="space-y-1.5 w-full">
               <p className="font-bold">Gagal Sinkronisasi Database</p>
-              <p>{dataError}</p>
-              <div className="flex items-center gap-2 pt-1">
+              <p className="text-red-700 leading-relaxed">{dataError}</p>
+              
+              <div className="p-3 bg-white border border-red-100 rounded-lg text-[11px] leading-relaxed text-slate-500 space-y-1 mt-1">
+                <span className="font-bold text-slate-700 uppercase tracking-wide block">💡 Mengapa ini terjadi?</span>
+                <p>Sinkronisasi gagal karena ID Spreadsheet salah, spreadsheet telah dihapus, akun Google Anda tidak memiliki akses ke file tersebut, atau konfigurasi Firebase telah berubah.</p>
+              </div>
+
+              <div className="flex flex-wrap items-center gap-2 pt-2">
                 {dataError.includes('UNAUTHORIZED') ? (
                   <button 
                     onClick={handleGoogleConnect}
@@ -803,12 +809,12 @@ export default function App() {
                   >
                     {isLoggingIn ? (
                       <>
-                        <Loader2 className="w-3 h-3 animate-spin" />
+                        <Loader2 className="w-3.5 h-3.5 animate-spin" />
                         Sedang Menghubungkan...
                       </>
                     ) : (
                       <>
-                        <RefreshCw className="w-3 h-3 animate-pulse" />
+                        <RefreshCw className="w-3.5 h-3.5 animate-pulse" />
                         Masuk Ulang Google
                       </>
                     )}
@@ -816,17 +822,55 @@ export default function App() {
                 ) : (
                   <button 
                     onClick={fetchAllData}
-                    className="px-3 py-1.5 bg-red-600 hover:bg-red-700 text-white rounded font-bold text-xs cursor-pointer transition-all active:scale-95"
+                    className="px-3 py-1.5 bg-red-600 hover:bg-red-700 text-white rounded font-bold text-xs cursor-pointer transition-all active:scale-95 flex items-center gap-1.5"
                     id="btn-retry-sync"
                   >
+                    <RefreshCw className="w-3.5 h-3.5" />
                     Coba Lagi
                   </button>
                 )}
+                
+                <button 
+                  onClick={() => {
+                    localStorage.removeItem('absensi_spreadsheet_id');
+                    setSpreadsheetId(null);
+                    setDataError(null);
+                  }}
+                  className="px-3 py-1.5 bg-amber-600 hover:bg-amber-700 text-white rounded font-bold text-xs cursor-pointer transition-all active:scale-95 flex items-center gap-1.5"
+                  id="btn-reset-spreadsheet-id"
+                >
+                  <FileSpreadsheet className="w-3.5 h-3.5" />
+                  Ganti / Reset Spreadsheet
+                </button>
+
+                <button 
+                  onClick={handleEnableOfflineMode}
+                  className="px-3 py-1.5 bg-emerald-600 hover:bg-emerald-700 text-white rounded font-bold text-xs cursor-pointer transition-all active:scale-95 flex items-center gap-1.5"
+                  id="btn-switch-to-offline"
+                >
+                  <Lock className="w-3.5 h-3.5" />
+                  Masuk Mode Offline
+                </button>
+
+                {localStorage.getItem('sipeg_custom_firebase_config') && (
+                  <button 
+                    onClick={() => {
+                      localStorage.removeItem('sipeg_custom_firebase_config');
+                      window.location.reload();
+                    }}
+                    className="px-3 py-1.5 bg-slate-600 hover:bg-slate-700 text-white rounded font-bold text-xs cursor-pointer transition-all active:scale-95"
+                    id="btn-reset-firebase-config"
+                  >
+                    Reset Config Firebase
+                  </button>
+                )}
+
                 <button
                   onClick={handleLogout}
-                  className="px-3 py-1.5 bg-slate-200 hover:bg-slate-300 text-slate-700 rounded font-bold text-xs cursor-pointer transition-all active:scale-95"
+                  className="px-3 py-1.5 bg-slate-200 hover:bg-slate-300 text-slate-700 rounded font-bold text-xs cursor-pointer transition-all active:scale-95 flex items-center gap-1.5"
                   id="btn-logout-sync-error"
                 >
+                  <LogOut className="w-3.5 h-3.5" />
                   Keluar Akun
                 </button>
               </div>
@@ -881,7 +925,7 @@ export default function App() {
                   </div>
                   <div className="p-3 bg-slate-50 border border-slate-200 rounded text-[11px] text-slate-500 text-left space-y-1">
                     <span className="font-bold text-slate-700 uppercase tracking-wide block">Cara menguji akses admin:</span>
-                    <p>Gunakan opsi <strong className="text-blue-600">Ganti Akun Demo (Uji Coba)</strong> di Portal Pegawai untuk memilih akun <strong>Kepala Sekolah</strong> (Drs. Ketut Pedungan) atau <strong>Staf Tata Usaha</strong> (I Wayan Sudiarta).</p>
+                    <p>Silakan hubungi Administrator Sekolah, atau gunakan tombol <strong className="text-red-600">Keluar</strong> di Portal Pegawai untuk masuk kembali menggunakan akun Google yang memiliki hak akses administrator.</p>
                   </div>
                   <button
                     onClick={() => setPortalType('employee')}

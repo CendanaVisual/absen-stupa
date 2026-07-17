@@ -861,32 +861,16 @@ export default function EmployeeDashboard({
           </div>
         </div>
 
-        {/* Demo Identity Switcher for easy testing */}
-        <div className="bg-white/10 backdrop-blur-sm rounded p-2 border border-white/15 flex flex-col gap-1 self-start sm:self-auto shrink-0 w-full sm:w-auto">
-          <label className="text-[9px] font-black uppercase tracking-wider text-blue-200">Ganti Akun Demo (Uji Coba)</label>
-          <div className="flex items-center gap-2 justify-between">
-            <select
-              value={selectedEmployeeId}
-              onChange={(e) => onSelectedEmployeeIdChange(e.target.value)}
-              className="bg-transparent border-0 text-xs font-bold focus:ring-0 text-white cursor-pointer pr-6 py-0 outline-none max-w-[180px]"
-              id="select-demo-employee"
-            >
-              {employees.map((emp, idx) => (
-                <option key={`${emp.id}-${idx}`} value={emp.id} className="text-slate-800">
-                  {emp.name} ({emp.role})
-                </option>
-              ))}
-            </select>
-            <button 
-              onClick={onLogout}
-              className="p-1 bg-red-600 hover:bg-red-700 rounded text-white transition-all"
-              title="Keluar / Ganti Akun Google"
-              id="btn-logout"
-            >
-              <LogOut className="w-3 h-3" />
-            </button>
-          </div>
-        </div>
+        {/* Luxurious Logout Button */}
+        <button 
+          onClick={onLogout}
+          className="flex items-center gap-2 px-5 py-2.5 bg-gradient-to-r from-red-600 to-rose-700 hover:from-red-500 hover:to-rose-600 text-white text-xs font-black tracking-wider uppercase rounded-xl border border-white/20 shadow-md hover:shadow-xl hover:scale-[1.03] active:scale-95 transition-all duration-300 cursor-pointer self-start sm:self-center shrink-0"
+          title="Keluar dari Portal Pegawai"
+          id="btn-logout"
+        >
+          <LogOut className="w-4 h-4 text-rose-200" />
+          <span>Keluar</span>
+        </button>
       </div>
 
       {/* Photo Edit Collapsible Section */}
