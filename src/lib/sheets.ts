@@ -1,9 +1,12 @@
-import { Employee, AttendanceRecord } from '../types';
+import { Employee, AttendanceRecord, UserAccount } from '../types';
 
 /**
  * Creates a brand new Spreadsheet in the user's Google Drive with Pegawai and Absensi sheets.
  */
 export async function createSpreadsheet(accessToken: string, title: string): Promise<string> {
+  if (accessToken === 'offline_token') {
+    return 'offline_spreadsheet';
+  }
   const url = 'https://sheets.googleapis.com/v4/spreadsheets';
   const response = await fetch(url, {
     method: 'POST',
@@ -48,6 +51,9 @@ export async function writeSheetValues(
   range: string,
   values: any[][]
 ): Promise<any> {
+  if (spreadsheetId === 'offline_spreadsheet' || accessToken === 'offline_token') {
+    return { success: true };
+  }
   const url = `https://sheets.googleapis.com/v4/spreadsheets/${spreadsheetId}/values/${encodeURIComponent(range)}?valueInputOption=USER_ENTERED`;
   const response = await fetch(url, {
     method: 'PUT',
@@ -79,6 +85,9 @@ export async function appendSheetValues(
   range: string,
   values: any[][]
 ): Promise<any> {
+  if (spreadsheetId === 'offline_spreadsheet' || accessToken === 'offline_token') {
+    return { success: true };
+  }
   const url = `https://sheets.googleapis.com/v4/spreadsheets/${spreadsheetId}/values/${encodeURIComponent(range)}:append?valueInputOption=USER_ENTERED`;
   const response = await fetch(url, {
     method: 'POST',
@@ -109,6 +118,36 @@ export async function ensureSheetsAndHeaders(
   accessToken: string,
   userEmail: string = ''
 ): Promise<void> {
+  if (spreadsheetId === 'offline_spreadsheet' || accessToken === 'offline_token') {
+    // Initialize offline default data if not already set
+    if (!localStorage.getItem('sipeg_offline_user_accounts')) {
+      const defaultAccounts = [
+        { username: "admin", sandi: "admin123", nip: "admin", role: "admin", name: "Administrator" },
+        { username: "budi", sandi: "budi123", nip: "199001012020121001", role: "pegawai", name: "Budi Santoso, S.Pd." },
+        { username: "dewi", sandi: "dewi123", nip: "198505122015042002", role: "pegawai", name: "Dewi Lestari, M.Pd." },
+        { username: "wayan", sandi: "wayan123", nip: "197808202008011003", role: "pegawai", name: "I Wayan Sudiarta" },
+        { username: "ketut", sandi: "ketut123", nip: "196512311988031001", role: "admin", name: "Drs. Ketut Pedungan" }
+      ];
+      localStorage.setItem('sipeg_offline_user_accounts', JSON.stringify(defaultAccounts));
+    }
+    if (!localStorage.getItem('sipeg_offline_employees')) {
+      const defaultEmployees = [
+        { id: "199001012020121001", name: "Budi Santoso, S.Pd.", role: "Guru Kelas IV", email: userEmail || "budi@sekolah.sch.id", baseSalary: 4500000 },
+        { id: "198505122015042002", name: "Dewi Lestari, M.Pd.", role: "Guru Matematika", email: "dewi@sekolah.sch.id", baseSalary: 4800000 },
+        { id: "197808202008011003", name: "I Wayan Sudiarta", role: "Staf Tata Usaha", email: "wayan@sekolah.sch.id", baseSalary: 3500000 },
+        { id: "196512311988031001", name: "Drs. Ketut Pedungan", role: "Kepala Sekolah", email: "ketut@sekolah.sch.id", baseSalary: 6000000 }
+      ];
+      localStorage.setItem('sipeg_offline_employees', JSON.stringify(defaultEmployees));
+    }
+    if (!localStorage.getItem('sipeg_offline_attendance')) {
+      localStorage.setItem('sipeg_offline_attendance', JSON.stringify([]));
+    }
+    if (!localStorage.getItem('sipeg_offline_leave_requests')) {
+      localStorage.setItem('sipeg_offline_leave_requests', JSON.stringify([]));
+    }
+    return;
+  }
+
   // 1. Get spreadsheet metadata
   const url = `https://sheets.googleapis.com/v4/spreadsheets/${spreadsheetId}`;
   const response = await fetch(url, {
@@ -116,6 +155,9 @@ export async function ensureSheetsAndHeaders(
   });
 
   if (!response.ok) {
+    if (response.status === 401) {
+      throw new Error('UNAUTHORIZED: Sesi Google Sheets Anda telah kedaluwarsa atau tidak valid. Silakan hubungkan ulang akun Google Anda.');
+    }
     throw new Error(`Gagal membaca metadata Spreadsheet. Pastikan ID Spreadsheet benar dan Anda memiliki izin akses.`);
   }
 
@@ -128,6 +170,7 @@ export async function ensureSheetsAndHeaders(
   if (!sheetTitles.includes('Pegawai')) missingSheets.push('Pegawai');
   if (!sheetTitles.includes('Absensi')) missingSheets.push('Absensi');
   if (!sheetTitles.includes('Pengajuan')) missingSheets.push('Pengajuan');
+  if (!sheetTitles.includes('Akun Pegawai')) missingSheets.push('Akun Pegawai');
 
   if (missingSheets.length > 0) {
     const batchUrl = `https://sheets.googleapis.com/v4/spreadsheets/${spreadsheetId}:batchUpdate`;
@@ -232,18 +275,105 @@ export async function ensureSheetsAndHeaders(
     ]];
     await writeSheetValues(spreadsheetId, accessToken, 'Pengajuan!A1', headers);
   }
+
+  // 5. Check and initialize "Akun Pegawai" sheet headers
+  const akunUrl = `https://sheets.googleapis.com/v4/spreadsheets/${spreadsheetId}/values/${encodeURIComponent('Akun Pegawai!A1:Z1')}`;
+  const akunRes = await fetch(akunUrl, {
+    headers: { 'Authorization': `Bearer ${accessToken}` },
+  });
+  const akunData = await akunRes.json();
+  const hasAkunHeaders = akunData.values && akunData.values.length > 0;
+
+  if (!hasAkunHeaders) {
+    const headers = [[
+      "Username",
+      "Sandi",
+      "NIP / ID",
+      "Role",
+      "Nama Lengkap"
+    ]];
+    const defaultAccounts = [
+      ["admin", "admin123", "admin", "admin", "Administrator"],
+      ["budi", "budi123", "199001012020121001", "pegawai", "Budi Santoso, S.Pd."],
+      ["dewi", "dewi123", "198505122015042002", "pegawai", "Dewi Lestari, M.Pd."],
+      ["wayan", "wayan123", "197808202008011003", "pegawai", "I Wayan Sudiarta"],
+      ["ketut", "ketut123", "196512311988031001", "admin", "Drs. Ketut Pedungan"]
+    ];
+    await writeSheetValues(spreadsheetId, accessToken, 'Akun Pegawai!A1', headers);
+    await appendSheetValues(spreadsheetId, accessToken, 'Akun Pegawai!A2', defaultAccounts);
+  }
+}
+
+/**
+ * Loads accounts from the "Akun Pegawai" tab.
+ */
+export async function loadUserAccounts(spreadsheetId: string, accessToken: string): Promise<UserAccount[]> {
+  if (spreadsheetId === 'offline_spreadsheet' || accessToken === 'offline_token') {
+    const data = localStorage.getItem('sipeg_offline_user_accounts');
+    if (data) return JSON.parse(data);
+    const defaultAccounts = [
+      { username: "admin", sandi: "admin123", nip: "admin", role: "admin", name: "Administrator" },
+      { username: "budi", sandi: "budi123", nip: "199001012020121001", role: "pegawai", name: "Budi Santoso, S.Pd." },
+      { username: "dewi", sandi: "dewi123", nip: "198505122015042002", role: "pegawai", name: "Dewi Lestari, M.Pd." },
+      { username: "wayan", sandi: "wayan123", nip: "197808202008011003", role: "pegawai", name: "I Wayan Sudiarta" },
+      { username: "ketut", sandi: "ketut123", nip: "196512311988031001", role: "admin", name: "Drs. Ketut Pedungan" }
+    ];
+    localStorage.setItem('sipeg_offline_user_accounts', JSON.stringify(defaultAccounts));
+    return defaultAccounts;
+  }
+
+  const url = `https://sheets.googleapis.com/v4/spreadsheets/${spreadsheetId}/values/${encodeURIComponent('Akun Pegawai!A2:E500')}`;
+  const response = await fetch(url, {
+    headers: { 'Authorization': `Bearer ${accessToken}` },
+  });
+
+  if (!response.ok) {
+    if (response.status === 401) {
+      throw new Error('UNAUTHORIZED: Sesi Google Sheets Anda telah kedaluwarsa atau tidak valid. Silakan hubungkan ulang akun Google Anda.');
+    }
+    throw new Error('Gagal memuat data akun dari spreadsheet.');
+  }
+
+  const data = await response.json();
+  const rows = data.values || [];
+
+  return rows
+    .filter((row: any[]) => row && row[0]) // ignore empty rows
+    .map((row: any[]) => ({
+      username: String(row[0] || '').trim(),
+      sandi: String(row[1] || '').trim(),
+      nip: String(row[2] || '').trim(),
+      role: String(row[3] || '').trim().toLowerCase(),
+      name: String(row[4] || '').trim(),
+    }));
 }
 
 /**
  * Loads employee list from the "Pegawai" tab.
  */
 export async function loadEmployees(spreadsheetId: string, accessToken: string): Promise<Employee[]> {
+  if (spreadsheetId === 'offline_spreadsheet' || accessToken === 'offline_token') {
+    const data = localStorage.getItem('sipeg_offline_employees');
+    if (data) return JSON.parse(data);
+    const defaultEmployees = [
+      { id: "199001012020121001", name: "Budi Santoso, S.Pd.", role: "Guru Kelas IV", email: "budi@sekolah.sch.id", baseSalary: 4500000 },
+      { id: "198505122015042002", name: "Dewi Lestari, M.Pd.", role: "Guru Matematika", email: "dewi@sekolah.sch.id", baseSalary: 4800000 },
+      { id: "197808202008011003", name: "I Wayan Sudiarta", role: "Staf Tata Usaha", email: "wayan@sekolah.sch.id", baseSalary: 3500000 },
+      { id: "196512311988031001", name: "Drs. Ketut Pedungan", role: "Kepala Sekolah", email: "ketut@sekolah.sch.id", baseSalary: 6000000 }
+    ];
+    localStorage.setItem('sipeg_offline_employees', JSON.stringify(defaultEmployees));
+    return defaultEmployees;
+  }
+
   const url = `https://sheets.googleapis.com/v4/spreadsheets/${spreadsheetId}/values/Pegawai!A2:L500`;
   const response = await fetch(url, {
     headers: { 'Authorization': `Bearer ${accessToken}` },
   });
 
   if (!response.ok) {
+    if (response.status === 401) {
+      throw new Error('UNAUTHORIZED: Sesi Google Sheets Anda telah kedaluwarsa atau tidak valid. Silakan hubungkan ulang akun Google Anda.');
+    }
     throw new Error('Gagal memuat data pegawai dari spreadsheet.');
   }
 
@@ -272,6 +402,27 @@ export async function loadEmployees(spreadsheetId: string, accessToken: string):
  * Saves a new employee to the "Pegawai" tab.
  */
 export async function addEmployee(spreadsheetId: string, accessToken: string, employee: Employee): Promise<any> {
+  if (spreadsheetId === 'offline_spreadsheet' || accessToken === 'offline_token') {
+    const current = await loadEmployees(spreadsheetId, accessToken);
+    current.push(employee);
+    localStorage.setItem('sipeg_offline_employees', JSON.stringify(current));
+
+    // Auto-create a local user account for them as well
+    const accounts = await loadUserAccounts(spreadsheetId, accessToken);
+    const firstName = employee.name.split(' ')[0].toLowerCase().replace(/[^a-z0-9]/g, '');
+    const username = firstName + Math.floor(Math.random() * 100);
+    const isAdm = employee.role.toLowerCase().includes('kepala') || employee.role.toLowerCase().includes('admin') || employee.role.toLowerCase().includes('operator');
+    accounts.push({
+      username,
+      sandi: firstName + '123',
+      nip: employee.id,
+      role: isAdm ? 'admin' : 'pegawai',
+      name: employee.name
+    });
+    localStorage.setItem('sipeg_offline_user_accounts', JSON.stringify(accounts));
+    return { success: true };
+  }
+
   const row = [[
     employee.id, 
     employee.name, 
@@ -297,6 +448,28 @@ export async function updateEmployee(
   accessToken: string,
   employee: Employee
 ): Promise<any> {
+  if (spreadsheetId === 'offline_spreadsheet' || accessToken === 'offline_token') {
+    const current = await loadEmployees(spreadsheetId, accessToken);
+    const updated = current.map(emp => emp.id === employee.id ? employee : emp);
+    localStorage.setItem('sipeg_offline_employees', JSON.stringify(updated));
+
+    // Sync changes to the local user account
+    const accounts = await loadUserAccounts(spreadsheetId, accessToken);
+    const isAdm = employee.role.toLowerCase().includes('kepala') || employee.role.toLowerCase().includes('admin') || employee.role.toLowerCase().includes('operator');
+    const updatedAccounts = accounts.map(acc => {
+      if (acc.nip === employee.id) {
+        return {
+          ...acc,
+          name: employee.name,
+          role: isAdm ? 'admin' : 'pegawai'
+        };
+      }
+      return acc;
+    });
+    localStorage.setItem('sipeg_offline_user_accounts', JSON.stringify(updatedAccounts));
+    return { success: true };
+  }
+
   const url = `https://sheets.googleapis.com/v4/spreadsheets/${spreadsheetId}/values/Pegawai!A:D`;
   const response = await fetch(url, {
     headers: { 'Authorization': `Bearer ${accessToken}` },
@@ -343,12 +516,22 @@ export async function updateEmployee(
  * Loads attendance records from the "Absensi" tab.
  */
 export async function loadAttendance(spreadsheetId: string, accessToken: string): Promise<AttendanceRecord[]> {
+  if (spreadsheetId === 'offline_spreadsheet' || accessToken === 'offline_token') {
+    const data = localStorage.getItem('sipeg_offline_attendance');
+    if (data) return JSON.parse(data);
+    localStorage.setItem('sipeg_offline_attendance', JSON.stringify([]));
+    return [];
+  }
+
   const url = `https://sheets.googleapis.com/v4/spreadsheets/${spreadsheetId}/values/Absensi!A2:Z2000`;
   const response = await fetch(url, {
     headers: { 'Authorization': `Bearer ${accessToken}` },
   });
 
   if (!response.ok) {
+    if (response.status === 401) {
+      throw new Error('UNAUTHORIZED: Sesi Google Sheets Anda telah kedaluwarsa atau tidak valid. Silakan hubungkan ulang akun Google Anda.');
+    }
     throw new Error('Gagal memuat riwayat absensi dari spreadsheet.');
   }
 
@@ -380,6 +563,13 @@ export async function saveAttendanceRecord(
   accessToken: string,
   record: AttendanceRecord
 ): Promise<any> {
+  if (spreadsheetId === 'offline_spreadsheet' || accessToken === 'offline_token') {
+    const current = await loadAttendance(spreadsheetId, accessToken);
+    current.push(record);
+    localStorage.setItem('sipeg_offline_attendance', JSON.stringify(current));
+    return { success: true };
+  }
+
   const row = [[
     record.timestamp,
     record.employeeId,
@@ -400,6 +590,13 @@ export async function saveAttendanceRecord(
  * Loads leave requests from the "Pengajuan" tab.
  */
 export async function loadLeaveRequests(spreadsheetId: string, accessToken: string): Promise<any[]> {
+  if (spreadsheetId === 'offline_spreadsheet' || accessToken === 'offline_token') {
+    const data = localStorage.getItem('sipeg_offline_leave_requests');
+    if (data) return JSON.parse(data);
+    localStorage.setItem('sipeg_offline_leave_requests', JSON.stringify([]));
+    return [];
+  }
+
   const url = `https://sheets.googleapis.com/v4/spreadsheets/${spreadsheetId}/values/Pengajuan!A2:J1000`;
   const response = await fetch(url, {
     headers: { 'Authorization': `Bearer ${accessToken}` },
@@ -436,6 +633,16 @@ export async function saveLeaveRequest(
   accessToken: string,
   request: any
 ): Promise<any> {
+  if (spreadsheetId === 'offline_spreadsheet' || accessToken === 'offline_token') {
+    const current = await loadLeaveRequests(spreadsheetId, accessToken);
+    current.push({
+      ...request,
+      timestamp: new Date().toLocaleString('id-ID', { hour12: false })
+    });
+    localStorage.setItem('sipeg_offline_leave_requests', JSON.stringify(current));
+    return { success: true };
+  }
+
   const row = [[
     request.id,
     request.employeeId,
@@ -460,6 +667,13 @@ export async function updateLeaveRequestStatus(
   requestId: string,
   newStatus: 'Disetujui' | 'Ditolak'
 ): Promise<any> {
+  if (spreadsheetId === 'offline_spreadsheet' || accessToken === 'offline_token') {
+    const current = await loadLeaveRequests(spreadsheetId, accessToken);
+    const updated = current.map(req => req.id === requestId ? { ...req, status: newStatus } : req);
+    localStorage.setItem('sipeg_offline_leave_requests', JSON.stringify(updated));
+    return { success: true };
+  }
+
   const url = `https://sheets.googleapis.com/v4/spreadsheets/${spreadsheetId}/values/Pengajuan!A:H`;
   const response = await fetch(url, {
     headers: { 'Authorization': `Bearer ${accessToken}` },
@@ -497,7 +711,14 @@ export async function updateEmployeePhoto(
   employeeId: string,
   photoUrl: string
 ): Promise<any> {
-  const url = `https://sheets.googleapis.com/v4/spreadsheets/${spreadsheetId}/values/Pegawai!A:E`;
+  if (spreadsheetId === 'offline_spreadsheet' || accessToken === 'offline_token') {
+    const current = await loadEmployees(spreadsheetId, accessToken);
+    const updated = current.map(emp => emp.id === employeeId ? { ...emp, photoUrl } : emp);
+    localStorage.setItem('sipeg_offline_employees', JSON.stringify(updated));
+    return { success: true };
+  }
+
+  const url = `https://sheets.googleapis.com/v4/spreadsheets/${spreadsheetId}/values/Pegawai!A1:L500`;
   const response = await fetch(url, {
     headers: { 'Authorization': `Bearer ${accessToken}` },
   });
@@ -511,7 +732,7 @@ export async function updateEmployeePhoto(
 
   let rowIndex = -1;
   for (let i = 1; i < rows.length; i++) {
-    if (rows[i][0] === employeeId) {
+    if (String(rows[i][0] || '').trim() === String(employeeId).trim()) {
       rowIndex = i + 1;
       break;
     }

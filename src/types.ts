@@ -51,6 +51,8 @@ export interface SchoolConfig {
   holidays?: CustomHoliday[];   // Custom holidays
   latePenaltyPerMinute?: number; // Penalty per minute of late check-in (Rp)
   earlyPenaltyPerMinute?: number; // Penalty per minute of early check-out (Rp)
+  logoUrl?: string;
+  backgroundUrl?: string;
 }
 
 export interface LeaveRequest {
@@ -63,3 +65,12 @@ export interface LeaveRequest {
   reason: string;
   status: 'Disetujui' | 'Pending' | 'Ditolak';
 }
+
+export interface UserAccount {
+  username: string;
+  sandi: string;
+  nip: string; // NIP/ID of employee or 'admin'
+  role: string; // 'admin' or 'pegawai'
+  name: string; // Full Name
+}
+

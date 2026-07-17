@@ -3,7 +3,7 @@ import { motion } from 'motion/react';
 import { 
   Users, Calendar, MapPin, Settings, Plus, Search, Filter, Trash, Edit, Palette,
   ExternalLink, CheckCircle, AlertTriangle, FileSpreadsheet, Loader2, Save, RefreshCw, UserCheck, XCircle, Clock, Printer,
-  Eye, Download, Paperclip
+  Eye, Download, Paperclip, Upload, School, Crown, Sparkles
 } from 'lucide-react';
 import { Employee, AttendanceRecord, SchoolConfig, CustomHoliday } from '../types';
 import { addEmployee, updateLeaveRequestStatus, saveAttendanceRecord, updateEmployee } from '../lib/sheets';
@@ -23,80 +23,133 @@ interface AdminDashboardProps {
 const ADMIN_THEMES = [
   {
     id: 'slate',
-    name: 'Classic Slate',
-    primaryText: 'text-blue-600',
-    primaryBg: 'bg-blue-600',
-    hoverBg: 'hover:bg-blue-700',
-    activeBg: 'active:bg-blue-800',
-    lightBg: 'bg-blue-50/50',
-    borderCol: 'border-blue-200 border',
-    accentText: 'text-blue-500',
-    gradient: 'from-slate-800 to-slate-950',
-    iconCol: 'text-blue-600',
-    focusRing: 'focus:border-blue-500',
-    previewCircle: 'bg-blue-600',
+    name: 'Classic Onyx & Gold',
+    primaryText: 'text-slate-900',
+    primaryBg: 'bg-slate-900',
+    hoverBg: 'hover:bg-slate-800',
+    activeBg: 'active:bg-black',
+    lightBg: 'bg-amber-50/70',
+    borderCol: 'border-amber-200/80 border',
+    accentText: 'text-amber-600',
+    gradient: 'from-slate-950 via-slate-900 to-slate-950',
+    iconCol: 'text-amber-600',
+    focusRing: 'focus:border-slate-900',
+    previewCircle: 'bg-slate-950 border border-amber-400',
   },
   {
     id: 'emerald',
-    name: 'Emerald Forest',
-    primaryText: 'text-emerald-600',
-    primaryBg: 'bg-emerald-600',
-    hoverBg: 'hover:bg-emerald-700',
-    activeBg: 'active:bg-emerald-800',
-    lightBg: 'bg-emerald-50/50',
-    borderCol: 'border-emerald-200 border',
-    accentText: 'text-emerald-500',
-    gradient: 'from-emerald-800 to-emerald-950',
-    iconCol: 'text-emerald-600',
-    focusRing: 'focus:border-emerald-500',
-    previewCircle: 'bg-emerald-600',
+    name: 'Royal Emerald & Gold',
+    primaryText: 'text-emerald-900',
+    primaryBg: 'bg-emerald-800',
+    hoverBg: 'hover:bg-emerald-900',
+    activeBg: 'active:bg-emerald-950',
+    lightBg: 'bg-emerald-50/70',
+    borderCol: 'border-amber-200 border',
+    accentText: 'text-amber-600',
+    gradient: 'from-emerald-950 via-emerald-900 to-slate-950',
+    iconCol: 'text-amber-600',
+    focusRing: 'focus:border-emerald-800',
+    previewCircle: 'bg-emerald-800 border border-amber-400',
   },
   {
     id: 'cosmic',
-    name: 'Cosmic Dusk',
-    primaryText: 'text-violet-600',
-    primaryBg: 'bg-violet-600',
-    hoverBg: 'hover:bg-violet-700',
-    activeBg: 'active:bg-violet-800',
-    lightBg: 'bg-violet-50/50',
-    borderCol: 'border-violet-200 border',
-    accentText: 'text-violet-500',
-    gradient: 'from-violet-800 to-violet-950',
-    iconCol: 'text-violet-600',
-    focusRing: 'focus:border-violet-500',
-    previewCircle: 'bg-violet-600',
+    name: 'Imperial Amethyst & Gold',
+    primaryText: 'text-indigo-950',
+    primaryBg: 'bg-indigo-900',
+    hoverBg: 'hover:bg-indigo-950',
+    activeBg: 'active:bg-indigo-950',
+    lightBg: 'bg-indigo-50/70',
+    borderCol: 'border-amber-200 border',
+    accentText: 'text-amber-600',
+    gradient: 'from-indigo-950 via-purple-900 to-slate-950',
+    iconCol: 'text-amber-600',
+    focusRing: 'focus:border-indigo-900',
+    previewCircle: 'bg-indigo-900 border border-amber-400',
   },
   {
     id: 'sapphire',
-    name: 'Royal Sapphire',
-    primaryText: 'text-indigo-600',
-    primaryBg: 'bg-indigo-600',
-    hoverBg: 'hover:bg-indigo-700',
-    activeBg: 'active:bg-indigo-800',
-    lightBg: 'bg-indigo-50/50',
-    borderCol: 'border-indigo-200 border',
-    accentText: 'text-indigo-500',
-    gradient: 'from-indigo-800 to-indigo-950',
-    iconCol: 'text-indigo-600',
-    focusRing: 'focus:border-indigo-500',
-    previewCircle: 'bg-indigo-600',
+    name: 'Majestic Sapphire & Gold',
+    primaryText: 'text-blue-950',
+    primaryBg: 'bg-blue-900',
+    hoverBg: 'hover:bg-blue-950',
+    activeBg: 'active:bg-blue-950',
+    lightBg: 'bg-blue-50/70',
+    borderCol: 'border-amber-200 border',
+    accentText: 'text-amber-500',
+    gradient: 'from-blue-950 via-indigo-950 to-slate-950',
+    iconCol: 'text-amber-500',
+    focusRing: 'focus:border-blue-900',
+    previewCircle: 'bg-blue-900 border border-amber-400',
   },
   {
     id: 'amber',
-    name: 'Amber Gold',
-    primaryText: 'text-amber-600',
-    primaryBg: 'bg-amber-600',
-    hoverBg: 'hover:bg-amber-700',
-    activeBg: 'active:bg-amber-800',
-    lightBg: 'bg-amber-50/50',
-    borderCol: 'border-amber-200 border',
-    accentText: 'text-amber-500',
-    gradient: 'from-amber-800 to-amber-950',
-    iconCol: 'text-amber-600',
-    focusRing: 'focus:border-amber-500',
-    previewCircle: 'bg-amber-600',
+    name: 'Golden Heritage & Obsidian',
+    primaryText: 'text-amber-900',
+    primaryBg: 'bg-amber-700',
+    hoverBg: 'hover:bg-amber-800',
+    activeBg: 'active:bg-amber-900',
+    lightBg: 'bg-amber-50/80',
+    borderCol: 'border-amber-300 border',
+    accentText: 'text-amber-700',
+    gradient: 'from-amber-950 via-amber-800 to-slate-950',
+    iconCol: 'text-amber-700',
+    focusRing: 'focus:border-amber-700',
+    previewCircle: 'bg-amber-600 border border-amber-200',
   }
 ];
+
+const SectionHeader = ({ 
+  title, 
+  subtitle, 
+  badge, 
+  icon: Icon 
+}: { 
+  title: string; 
+  subtitle: string; 
+  badge?: string; 
+  icon: React.ComponentType<any> 
+}) => {
+  return (
+    <div className="bg-gradient-to-r from-slate-950 via-slate-900 to-slate-950 border-y sm:border border-amber-400/40 px-5 py-4 sm:rounded-2xl shadow-lg relative overflow-hidden mb-5">
+      {/* Absolute background patterns */}
+      <div className="absolute inset-0 opacity-[0.03] pointer-events-none bg-[radial-gradient(#d97706_1px,transparent_1px)] [background-size:16px_16px]" />
+      <div className="absolute right-0 top-0 bottom-0 w-1/3 bg-gradient-to-l from-amber-500/[0.05] to-transparent pointer-events-none" />
+      
+      <div className="relative z-10 flex flex-col sm:flex-row sm:items-center justify-between gap-3">
+        <div className="flex items-center gap-3.5">
+          <div className="w-10 h-10 rounded-xl bg-gradient-to-br from-amber-400 to-amber-600 p-0.5 shadow-md flex items-center justify-center text-slate-950 shrink-0">
+            <div className="w-full h-full rounded-[10px] bg-slate-950 flex items-center justify-center">
+              <Icon className="w-4.5 h-4.5 text-amber-400" />
+            </div>
+          </div>
+          <div>
+            <div className="flex items-center gap-2">
+              <span className="text-[9px] font-black tracking-widest text-amber-500 uppercase">
+                PORTAL ADMINISTRATOR
+              </span>
+              {badge && (
+                <span className="px-2 py-0.5 bg-red-600 text-white text-[8px] font-black uppercase tracking-widest rounded-full animate-pulse">
+                  {badge}
+                </span>
+              )}
+            </div>
+            <h2 className="text-sm sm:text-base font-black text-white tracking-tight uppercase mt-0.5 font-sans flex items-center gap-1.5">
+              {title}
+            </h2>
+            <p className="text-[10px] text-amber-100/65 font-medium tracking-wide">
+              {subtitle}
+            </p>
+          </div>
+        </div>
+        
+        <div className="hidden sm:flex items-center gap-1.5 px-3 py-1 bg-amber-400/[0.08] border border-amber-400/20 rounded-lg">
+          <Crown className="w-3.5 h-3.5 text-amber-400" />
+          <span className="text-[9px] font-bold text-amber-400 uppercase tracking-widest">EXECUTIVE PLATINUM</span>
+        </div>
+      </div>
+    </div>
+  );
+};
 
 export default function AdminDashboard({
   employees,
@@ -119,11 +172,14 @@ export default function AdminDashboard({
   const [activeTab, setActiveTab] = useState<'rekap' | 'pegawai' | 'lokasi' | 'pengaturan' | 'persetujuan'>('rekap');
   const [previewPhotoModal, setPreviewPhotoModal] = useState<string | null>(null);
   const [selectedEvidenceUrl, setSelectedEvidenceUrl] = useState<string | null>(null);
+  const [isRefreshing, setIsRefreshing] = useState(false);
 
   // New Employee Form States
   const [newEmpId, setNewEmpId] = useState('');
   const [newEmpName, setNewEmpName] = useState('');
   const [newEmpRole, setNewEmpRole] = useState('Guru Kelas');
+  const [newEmpRoleIsCustom, setNewEmpRoleIsCustom] = useState(false);
+  const [newEmpRoleCustomVal, setNewEmpRoleCustomVal] = useState('');
   const [newEmpEmail, setNewEmpEmail] = useState('');
   const [newEmpSalary, setNewEmpSalary] = useState<number>(4000000);
   const [empSubmitting, setEmpSubmitting] = useState(false);
@@ -133,6 +189,8 @@ export default function AdminDashboard({
   const [editingEmployee, setEditingEmployee] = useState<Employee | null>(null);
   const [editEmpName, setEditEmpName] = useState('');
   const [editEmpRole, setEditEmpRole] = useState('');
+  const [editEmpRoleIsCustom, setEditEmpRoleIsCustom] = useState(false);
+  const [editEmpRoleCustomVal, setEditEmpRoleCustomVal] = useState('');
   const [editEmpEmail, setEditEmpEmail] = useState('');
   const [editEmpSalary, setEditEmpSalary] = useState<number>(0);
   const [editEmpInStart, setEditEmpInStart] = useState('');
@@ -170,6 +228,89 @@ export default function AdminDashboard({
   const [sheetIdInput, setSheetIdInput] = useState(spreadsheetId);
   const [sheetIdSuccess, setSheetIdSuccess] = useState<string | null>(null);
 
+  // Custom Firebase configuration states
+  const [fbPastedConfig, setFbPastedConfig] = useState('');
+  const [fbSuccess, setFbSuccess] = useState<string | null>(null);
+  
+  const getCustomFbConfig = () => {
+    try {
+      const saved = localStorage.getItem('sipeg_custom_firebase_config');
+      if (saved) return JSON.parse(saved);
+    } catch (e) {}
+    return null;
+  };
+
+  const initialFb = getCustomFbConfig();
+  const [fbApiKey, setFbApiKey] = useState(initialFb?.apiKey || '');
+  const [fbProjectId, setFbProjectId] = useState(initialFb?.projectId || '');
+  const [fbAppId, setFbAppId] = useState(initialFb?.appId || '');
+  const [fbAuthDomain, setFbAuthDomain] = useState(initialFb?.authDomain || '');
+  const [fbStorageBucket, setFbStorageBucket] = useState(initialFb?.storageBucket || '');
+  const [fbMessagingSenderId, setFbMessagingSenderId] = useState(initialFb?.messagingSenderId || '');
+  const [fbOAuthClientId, setFbOAuthClientId] = useState(initialFb?.oAuthClientId || '');
+
+  const handleAutoExtractFirebaseConfig = () => {
+    if (!fbPastedConfig.trim()) return;
+    
+    const extract = (key: string) => {
+      const regex = new RegExp(`['"]?${key}['"]?\\s*:\\s*['"]([^'"]+)['"]`);
+      const match = fbPastedConfig.match(regex);
+      return match ? match[1] : '';
+    };
+
+    const apiKey = extract('apiKey');
+    const projectId = extract('projectId');
+    const appId = extract('appId');
+    const authDomain = extract('authDomain');
+    const storageBucket = extract('storageBucket');
+    const messagingSenderId = extract('messagingSenderId');
+    const oAuthClientId = extract('oAuthClientId') || extract('clientId');
+
+    if (apiKey) setFbApiKey(apiKey);
+    if (projectId) setFbProjectId(projectId);
+    if (appId) setFbAppId(appId);
+    if (authDomain) setFbAuthDomain(authDomain);
+    if (storageBucket) setFbStorageBucket(storageBucket);
+    if (messagingSenderId) setFbMessagingSenderId(messagingSenderId);
+    if (oAuthClientId) setFbOAuthClientId(oAuthClientId);
+
+    setFbSuccess("Berhasil mengekstrak parameter dari teks konfigurasi! Silakan cek kolom di bawah.");
+    setTimeout(() => setFbSuccess(null), 4000);
+  };
+
+  const handleSaveFirebaseConfig = (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!fbProjectId.trim() && !fbApiKey.trim()) {
+      alert("Masukkan minimal ID Project atau API Key Firebase!");
+      return;
+    }
+
+    const config = {
+      apiKey: fbApiKey.trim(),
+      projectId: fbProjectId.trim(),
+      appId: fbAppId.trim(),
+      authDomain: fbAuthDomain.trim(),
+      storageBucket: fbStorageBucket.trim(),
+      messagingSenderId: fbMessagingSenderId.trim(),
+      oAuthClientId: fbOAuthClientId.trim()
+    };
+
+    localStorage.setItem('sipeg_custom_firebase_config', JSON.stringify(config));
+    setFbSuccess(`Koneksi Firebase berhasil diperbarui ke '${config.projectId}'! Memuat ulang halaman...`);
+    
+    setTimeout(() => {
+      window.location.reload();
+    }, 1500);
+  };
+
+  const handleResetFirebaseConfig = () => {
+    localStorage.removeItem('sipeg_custom_firebase_config');
+    setFbSuccess("Koneksi Firebase dikembalikan ke default Studio! Memuat ulang halaman...");
+    setTimeout(() => {
+      window.location.reload();
+    }, 1500);
+  };
+
   // Filters for attendance logs
   const [filterEmployeeId, setFilterEmployeeId] = useState('');
   const [filterDate, setFilterDate] = useState(new Date().toISOString().split('T')[0]); // Default to today
@@ -180,6 +321,318 @@ export default function AdminDashboard({
   const [rekapYear, setRekapYear] = useState(() => new Date().getFullYear().toString());
   const [rekapEmployeeId, setRekapEmployeeId] = useState('all');
   const [showPrintPreview, setShowPrintPreview] = useState(false);
+  const [isGeneratingPDF, setIsGeneratingPDF] = useState(false);
+
+  const getMonthNameIndoLocal = (mCode: string) => {
+    const months: Record<string, string> = {
+      'all': 'Semua Bulan',
+      '01': 'Januari', '02': 'Februari', '03': 'Maret', '04': 'April',
+      '05': 'Mei', '06': 'Juni', '07': 'Juli', '08': 'Agustus',
+      '09': 'September', '10': 'Oktober', '11': 'November', '12': 'Desember'
+    };
+    return months[mCode] || mCode;
+  };
+
+  const handleExportAttendanceToCSV = (filteredLogs: AttendanceRecord[]) => {
+    const headers = [
+      "No",
+      "Tanggal",
+      "Waktu",
+      "Nama Pegawai",
+      "NIP / ID",
+      "Tipe Absen",
+      "Status Kehadiran",
+      "Jarak GPS (meter)",
+      "Keterangan/Notes"
+    ];
+    
+    const rows = filteredLogs.map((rec, idx) => {
+      let formattedDate = rec.date || '';
+      try {
+        if (rec.date) {
+          const d = new Date(rec.date);
+          formattedDate = d.toLocaleDateString('id-ID', { weekday: 'long', day: '2-digit', month: 'long', year: 'numeric' });
+        }
+      } catch (e) {}
+      
+      return [
+        idx + 1,
+        formattedDate,
+        rec.time || '-',
+        rec.employeeName || '-',
+        rec.employeeId || '-',
+        rec.type === 'Masuk' ? 'Presensi Masuk' : 'Presensi Pulang',
+        rec.status || '-',
+        rec.distance && rec.distance !== '-' ? `${rec.distance}m` : '-',
+        rec.notes || '-'
+      ];
+    });
+
+    const csvContent = "\uFEFF" + [headers.join(';'), ...rows.map(row => row.map(val => `"${String(val).replace(/"/g, '""')}"`).join(';'))].join('\n');
+    
+    const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
+    const url = URL.createObjectURL(blob);
+    const link = document.createElement("a");
+    link.setAttribute("href", url);
+    link.setAttribute("download", `Rekap_Log_Kehadiran_${getMonthNameIndoLocal(rekapMonth)}_${rekapYear}.csv`);
+    document.body.appendChild(link);
+    link.click();
+    document.body.removeChild(link);
+  };
+
+  const handleExportPayrollToCSV = (rekapRows: any[]) => {
+    const headers = [
+      "No",
+      "Nama Pegawai",
+      "NIP / ID",
+      "Jabatan",
+      "Gaji Pokok",
+      "Total Hadir",
+      "Total Terlambat",
+      "Total Sakit/Cuti/Dinas",
+      "Potongan Denda",
+      "Gaji Bersih"
+    ];
+
+    const rows = rekapRows.map((row, idx) => [
+      idx + 1,
+      row.name,
+      row.id,
+      row.role,
+      `Rp ${row.gajiPokok.toLocaleString('id-ID')}`,
+      row.totalHadir,
+      row.totalTerlambat,
+      row.totalSakit + row.totalCuti + row.totalDinas,
+      `Rp ${row.totalDenda.toLocaleString('id-ID')}`,
+      `Rp ${row.gajiBersih.toLocaleString('id-ID')}`
+    ]);
+
+    const csvContent = "\uFEFF" + [headers.join(';'), ...rows.map(row => row.map(val => `"${String(val).replace(/"/g, '""')}"`).join(';'))].join('\n');
+    
+    const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
+    const url = URL.createObjectURL(blob);
+    const link = document.createElement("a");
+    link.setAttribute("href", url);
+    link.setAttribute("download", `Rekap_Payroll_Gaji_${getMonthNameIndoLocal(rekapMonth)}_${rekapYear}.csv`);
+    document.body.appendChild(link);
+    link.click();
+    document.body.removeChild(link);
+  };
+
+  const handleExportToPDF = () => {
+    const element = document.getElementById('print-section');
+    if (!element) {
+      alert('Elemen rekap tidak ditemukan. Pastikan Anda membuka Pratinjau terlebih dahulu.');
+      return;
+    }
+
+    setIsGeneratingPDF(true);
+
+    const loadScript = (url: string): Promise<any> => {
+      return new Promise((resolve, reject) => {
+        if ((window as any).html2pdf) {
+          resolve((window as any).html2pdf);
+          return;
+        }
+        const script = document.createElement('script');
+        script.src = url;
+        script.onload = () => resolve((window as any).html2pdf);
+        script.onerror = reject;
+        document.head.appendChild(script);
+      });
+    };
+
+    const oklchCache: Record<string, string> = {};
+    const resolveOklch = (match: string) => {
+      if (oklchCache[match]) return oklchCache[match];
+      try {
+        const tempDiv = document.createElement('div');
+        tempDiv.style.color = match;
+        document.body.appendChild(tempDiv);
+        const resolvedColor = window.getComputedStyle(tempDiv).color;
+        document.body.removeChild(tempDiv);
+        oklchCache[match] = resolvedColor || 'rgb(0, 0, 0)';
+        return oklchCache[match];
+      } catch (e) {
+        return 'rgb(0, 0, 0)';
+      }
+    };
+
+    const prepareStyles = async () => {
+      const restored: any[] = [];
+      
+      // 1. Handle style element
+      const styles = Array.from(document.querySelectorAll('style'));
+      for (const style of styles) {
+        const originalText = style.textContent;
+        if (originalText && originalText.includes('oklch')) {
+          const sanitized = originalText.replace(/oklch\([^)]+\)/g, resolveOklch);
+          style.textContent = sanitized;
+          restored.push({ element: style, originalText });
+        }
+      }
+
+      // 2. Handle link element
+      const links = Array.from(document.querySelectorAll('link[rel="stylesheet"]'));
+      for (const link of links) {
+        try {
+          const href = link.getAttribute('href');
+          if (href) {
+            const response = await fetch(href);
+            const cssText = await response.text();
+            if (cssText.includes('oklch')) {
+              const sanitized = cssText.replace(/oklch\([^)]+\)/g, resolveOklch);
+              const newStyle = document.createElement('style');
+              newStyle.textContent = sanitized;
+              newStyle.setAttribute('data-pdf-sanitized', 'true');
+              document.head.appendChild(newStyle);
+              
+              (link as any).disabled = true;
+              restored.push({ 
+                element: link, 
+                action: 'link', 
+                newStyleElement: newStyle 
+              });
+            }
+          }
+        } catch (err) {
+          console.warn('Could not sanitize link stylesheet:', err);
+        }
+      }
+      return restored;
+    };
+
+    const restoreStyles = (restored: any[]) => {
+      for (const item of restored) {
+        if (item.action === 'link') {
+          (item.element as any).disabled = false;
+          if (item.newStyleElement && item.newStyleElement.parentNode) {
+            item.newStyleElement.parentNode.removeChild(item.newStyleElement);
+          }
+        } else {
+          item.element.textContent = item.originalText;
+        }
+      }
+    };
+
+    let restoredStylesList: any[] = [];
+
+    prepareStyles()
+      .then((restored) => {
+        restoredStylesList = restored;
+        return loadScript('https://cdnjs.cloudflare.com/ajax/libs/html2pdf.js/0.10.1/html2pdf.bundle.min.js');
+      })
+      .then((html2pdf: any) => {
+        const opt = {
+          margin:       0.3,
+          filename:     `Laporan_Kehadiran_Sipeg_${rekapMonth}_${rekapYear}.pdf`,
+          image:        { type: 'jpeg', quality: 0.98 },
+          html2canvas:  { scale: 2, useCORS: true, logging: false },
+          jsPDF:        { unit: 'in', format: 'a4', orientation: 'landscape' }
+        };
+        return html2pdf().from(element).set(opt).save();
+      })
+      .catch((err) => {
+        console.error('Gagal memuat html2pdf:', err);
+        alert('Gagal mengekspor PDF secara otomatis. Silakan gunakan tombol "Cetak Sekarang (Print)" dan pilih opsi "Simpan sebagai PDF" di dialog browser Anda.');
+      })
+      .finally(() => {
+        restoreStyles(restoredStylesList);
+        setIsGeneratingPDF(false);
+      });
+  };
+
+  const handleQuickExportAttendance = () => {
+    const filteredLogs = attendance.filter(record => {
+      if (!record.date) return false;
+      if (rekapEmployeeId !== 'all' && record.employeeId !== rekapEmployeeId) return false;
+      
+      const recYear = record.date.substring(0, 4);
+      const recMonth = record.date.substring(5, 7);
+      
+      const matchesMonth = rekapMonth === 'all' || recMonth === rekapMonth;
+      const matchesYear = rekapYear === 'all' || recYear === rekapYear;
+      return matchesMonth && matchesYear;
+    });
+
+    filteredLogs.sort((a, b) => {
+      const dateComp = (a.date || '').localeCompare(b.date || '');
+      if (dateComp !== 0) return dateComp;
+      return (a.time || '').localeCompare(b.time || '');
+    });
+
+    handleExportAttendanceToCSV(filteredLogs);
+  };
+
+  const handleQuickExportPayroll = () => {
+    const filteredEmployeesForRekap = rekapEmployeeId === 'all'
+      ? employees
+      : employees.filter(emp => emp.id === rekapEmployeeId);
+
+    const rekapRows = filteredEmployeesForRekap.map((emp) => {
+      const empRecords = attendance.filter(record => {
+        if (record.employeeId !== emp.id) return false;
+        if (!record.date) return false;
+        const recYear = record.date.substring(0, 4);
+        const recMonth = record.date.substring(5, 7);
+        
+        const matchesMonth = rekapMonth === 'all' || recMonth === rekapMonth;
+        const matchesYear = rekapYear === 'all' || recYear === rekapYear;
+        return matchesMonth && matchesYear;
+      });
+
+      const totalHadir = empRecords.filter(r => r.type === 'Masuk').length;
+      const totalTerlambat = empRecords.filter(r => r.type === 'Masuk' && r.status === 'Terlambat').length;
+      const totalTepatWaktu = empRecords.filter(r => r.type === 'Masuk' && r.status === 'Tepat Waktu').length;
+      const totalSakit = empRecords.filter(r => r.status === 'Sakit').length;
+      const totalCuti = empRecords.filter(r => r.status === 'Cuti').length;
+      const totalDinas = empRecords.filter(r => r.status === 'Dinas Luar').length;
+      
+      const totalDenda = empRecords.reduce((sum, r) => {
+        const matchPotongan = r.notes?.match(/Potongan:\s*Rp\s*([\d\.]+)/i);
+        if (matchPotongan && matchPotongan[1]) {
+          const cleanNum = matchPotongan[1].replace(/\./g, '');
+          const parsed = parseInt(cleanNum, 10);
+          if (!isNaN(parsed)) return sum + parsed;
+        }
+
+        const matchTerlambat = r.notes?.match(/Terlambat\s*(\d+)m/i);
+        if (matchTerlambat && matchTerlambat[1]) {
+          const mins = parseInt(matchTerlambat[1], 10);
+          const rate = schoolConfig.latePenaltyPerMinute ?? 1000;
+          return sum + (mins * rate);
+        }
+
+        const matchMendahului = r.notes?.match(/Mendahului\s*(?:Pulang\s*)?(\d+)m/i);
+        if (matchMendahului && matchMendahului[1]) {
+          const mins = parseInt(matchMendahului[1], 10);
+          const rate = schoolConfig.earlyPenaltyPerMinute ?? 1000;
+          return sum + (mins * rate);
+        }
+
+        return sum + (r.penaltyAmount || 0);
+      }, 0);
+      const gajiPokok = emp.baseSalary || 4000000;
+      const gajiBersih = Math.max(0, gajiPokok - totalDenda);
+
+      return {
+        id: emp.id,
+        name: emp.name,
+        role: emp.role,
+        gajiPokok,
+        totalHadir,
+        totalTerlambat,
+        totalTepatWaktu,
+        totalSakit,
+        totalCuti,
+        totalDinas,
+        totalDenda,
+        gajiBersih
+      };
+    });
+
+    handleExportPayrollToCSV(rekapRows);
+  };
 
   // Leave Request Approval States
   const [approvalSubmitting, setApprovalSubmitting] = useState<string | null>(null);
@@ -325,10 +778,14 @@ export default function AdminDashboard({
         throw new Error('Pegawai dengan NIP / ID tersebut sudah terdaftar.');
       }
 
+      const finalRole = (newEmpRole === 'Lainnya' || newEmpRoleIsCustom)
+        ? (newEmpRoleCustomVal.trim() || 'Lainnya')
+        : newEmpRole.trim();
+
       const emp: Employee = {
         id: newEmpId.trim(),
         name: newEmpName.trim(),
-        role: newEmpRole.trim(),
+        role: finalRole,
         email: newEmpEmail.trim().toLowerCase(),
         baseSalary: Number(newEmpSalary) || 0,
       };
@@ -339,6 +796,9 @@ export default function AdminDashboard({
       setNewEmpId('');
       setNewEmpName('');
       setNewEmpEmail('');
+      setNewEmpRoleCustomVal('');
+      setNewEmpRoleIsCustom(false);
+      setNewEmpRole('Guru Kelas');
       setEmpSuccess(`Pegawai "${emp.name}" berhasil ditambahkan ke database Google Sheets!`);
       setTimeout(() => setEmpSuccess(null), 5000);
     } catch (err: any) {
@@ -353,7 +813,18 @@ export default function AdminDashboard({
   const openEditModal = (emp: Employee) => {
     setEditingEmployee(emp);
     setEditEmpName(emp.name);
-    setEditEmpRole(emp.role);
+    
+    const standardRoles = ["Kepala Sekolah", "Guru Kelas", "Guru Mapel", "Staf Tata Usaha", "Pustakawan", "Penjaga Sekolah"];
+    if (standardRoles.includes(emp.role)) {
+      setEditEmpRole(emp.role);
+      setEditEmpRoleIsCustom(false);
+      setEditEmpRoleCustomVal('');
+    } else {
+      setEditEmpRole('Lainnya');
+      setEditEmpRoleIsCustom(true);
+      setEditEmpRoleCustomVal(emp.role);
+    }
+    
     setEditEmpEmail(emp.email);
     setEditEmpSalary(emp.baseSalary || 4000000);
     setEditEmpInStart(emp.checkInStart || '');
@@ -371,10 +842,14 @@ export default function AdminDashboard({
 
     setEditSubmitting(true);
     try {
+      const finalRole = (editEmpRole === 'Lainnya' || editEmpRoleIsCustom)
+        ? (editEmpRoleCustomVal.trim() || 'Lainnya')
+        : editEmpRole.trim();
+
       const updated: Employee = {
         ...editingEmployee,
         name: editEmpName.trim(),
-        role: editEmpRole.trim(),
+        role: finalRole,
         email: editEmpEmail.trim().toLowerCase(),
         baseSalary: Number(editEmpSalary) || 0,
         checkInStart: editEmpInStart || undefined,
@@ -421,6 +896,8 @@ export default function AdminDashboard({
       holidays,
       latePenaltyPerMinute: Number(latePenaltyPerMinute) || 0,
       earlyPenaltyPerMinute: Number(earlyPenaltyPerMinute) || 0,
+      logoUrl: schoolConfig.logoUrl,
+      backgroundUrl: schoolConfig.backgroundUrl,
     };
     onUpdateSchoolConfig(config);
     setLocSuccess('Konfigurasi sekolah, aturan libur, & denda keterlambatan berhasil diperbarui!');
@@ -462,6 +939,8 @@ export default function AdminDashboard({
       holidays: updatedHolidays,
       latePenaltyPerMinute,
       earlyPenaltyPerMinute,
+      logoUrl: schoolConfig.logoUrl,
+      backgroundUrl: schoolConfig.backgroundUrl,
     };
     onUpdateSchoolConfig(config);
   };
@@ -487,6 +966,8 @@ export default function AdminDashboard({
       holidays: updatedHolidays,
       latePenaltyPerMinute,
       earlyPenaltyPerMinute,
+      logoUrl: schoolConfig.logoUrl,
+      backgroundUrl: schoolConfig.backgroundUrl,
     };
     onUpdateSchoolConfig(config);
   };
@@ -562,11 +1043,154 @@ export default function AdminDashboard({
     return parseDateSafe(b.date, b.time) - parseDateSafe(a.date, a.time);
   });
 
-  return (
-    <div className="space-y-4">
+  // Print preview calculations
+  const getMonthNameIndo = (mCode: string) => {
+    const list: Record<string, string> = {
+      '01': 'Januari', '02': 'Februari', '03': 'Maret', '04': 'April',
+      '05': 'Mei', '06': 'Juni', '07': 'Juli', '08': 'Agustus',
+      '09': 'September', '10': 'Oktober', '11': 'November', '12': 'Desember',
+      'all': 'Semua Bulan'
+    };
+    return list[mCode] || mCode;
+  };
+
+  const filteredEmployeesForRekap = rekapEmployeeId === 'all'
+    ? employees
+    : employees.filter(emp => emp.id === rekapEmployeeId);
+
+  const computedRekapRows = filteredEmployeesForRekap.map((emp) => {
+    const empRecords = attendance.filter(record => {
+      if (record.employeeId !== emp.id) return false;
+      if (!record.date) return false;
+      const recYear = record.date.substring(0, 4);
+      const recMonth = record.date.substring(5, 7);
       
+      const matchesMonth = rekapMonth === 'all' || recMonth === rekapMonth;
+      const matchesYear = rekapYear === 'all' || recYear === rekapYear;
+      return matchesMonth && matchesYear;
+    });
+
+    const totalHadir = empRecords.filter(r => r.type === 'Masuk').length;
+    const totalTerlambat = empRecords.filter(r => r.type === 'Masuk' && r.status === 'Terlambat').length;
+    const totalTepatWaktu = empRecords.filter(r => r.type === 'Masuk' && r.status === 'Tepat Waktu').length;
+    const totalSakit = empRecords.filter(r => r.status === 'Sakit').length;
+    const totalCuti = empRecords.filter(r => r.status === 'Cuti').length;
+    const totalDinas = empRecords.filter(r => r.status === 'Dinas Luar').length;
+    
+    const totalDenda = empRecords.reduce((sum, r) => {
+      const matchPotongan = r.notes?.match(/Potongan:\s*Rp\s*([\d\.]+)/i);
+      if (matchPotongan && matchPotongan[1]) {
+        const cleanNum = matchPotongan[1].replace(/\./g, '');
+        const parsed = parseInt(cleanNum, 10);
+        if (!isNaN(parsed)) return sum + parsed;
+      }
+
+      const matchTerlambat = r.notes?.match(/Terlambat\s*(\d+)m/i);
+      if (matchTerlambat && matchTerlambat[1]) {
+        const mins = parseInt(matchTerlambat[1], 10);
+        const rate = schoolConfig.latePenaltyPerMinute ?? 1000;
+        return sum + (mins * rate);
+      }
+
+      const matchMendahului = r.notes?.match(/Mendahului\s*(?:Pulang\s*)?(\d+)m/i);
+      if (matchMendahului && matchMendahului[1]) {
+        const mins = parseInt(matchMendahului[1], 10);
+        const rate = schoolConfig.earlyPenaltyPerMinute ?? 1000;
+        return sum + (mins * rate);
+      }
+
+      return sum + (r.penaltyAmount || 0);
+    }, 0);
+    const gajiPokok = emp.baseSalary || 4000000;
+    const gajiBersih = Math.max(0, gajiPokok - totalDenda);
+
+    return {
+      id: emp.id,
+      name: emp.name,
+      role: emp.role,
+      gajiPokok,
+      totalHadir,
+      totalTerlambat,
+      totalTepatWaktu,
+      totalSakit,
+      totalCuti,
+      totalDinas,
+      totalDenda,
+      gajiBersih
+    };
+  });
+
+  const filteredAttendanceForReport = attendance.filter(record => {
+    if (!record.date) return false;
+    if (rekapEmployeeId !== 'all' && record.employeeId !== rekapEmployeeId) return false;
+    
+    const recYear = record.date.substring(0, 4);
+    const recMonth = record.date.substring(5, 7);
+    
+    const matchesMonth = rekapMonth === 'all' || recMonth === rekapMonth;
+    const matchesYear = rekapYear === 'all' || recYear === rekapYear;
+    return matchesMonth && matchesYear;
+  });
+
+  // Sort report attendance
+  const sortedAttendanceForReport = [...filteredAttendanceForReport].sort((a, b) => {
+    const dateComp = (a.date || '').localeCompare(b.date || '');
+    if (dateComp !== 0) return dateComp;
+    return (a.time || '').localeCompare(b.time || '');
+  });
+
+  return (
+    <div className="relative overflow-hidden p-4 md:p-6 bg-slate-50 border border-slate-200 rounded-xl">
+      {/* Background Motif */}
+      <div 
+        className="absolute inset-0 pointer-events-none z-0 opacity-50 bg-repeat" 
+        style={{ 
+          backgroundImage: `url("${schoolConfig.backgroundUrl || 'https://images.unsplash.com/photo-1544816155-12df9643f363?auto=format&fit=crop&q=80&w=1200'} ")`,
+          backgroundSize: '240px'
+        }}
+      />
+
+      <div className="relative z-10 space-y-6">
+      
+        {/* Luxury Elegant Dashboard Header */}
+        <div className="bg-white/95 backdrop-blur-md border border-amber-200/80 p-5 rounded-2xl shadow-lg relative overflow-hidden flex flex-col md:flex-row items-start md:items-center justify-between gap-4 transition-all duration-300">
+          {/* Subtle gold shine effect */}
+          <div className="absolute top-0 left-0 w-32 h-full bg-gradient-to-r from-transparent via-amber-200/10 to-transparent skew-x-12 -translate-x-40 animate-pulse pointer-events-none" />
+          
+          <div className="flex items-center gap-4">
+            <div className="p-3 bg-gradient-to-br from-amber-500 to-amber-600 rounded-2xl text-white shadow-md shadow-amber-500/20 shrink-0">
+              <Crown className="w-6 h-6" />
+            </div>
+            <div>
+              <div className="flex items-center gap-2">
+                <span className="px-2 py-0.5 bg-amber-100 text-amber-800 text-[9px] font-black uppercase tracking-widest rounded-full border border-amber-200 shadow-xs">
+                  Sistem Informasi Presensi & Payroll
+                </span>
+                <span className="text-[9px] font-bold text-slate-400 font-mono tracking-widest uppercase">
+                  v3.5 Executive Suite
+                </span>
+              </div>
+              <h1 className="text-xl md:text-2xl font-black text-slate-900 tracking-tight leading-tight mt-1 flex items-center gap-2 font-sans">
+                {schoolConfig.name || "SD NEGERI 7 PEDUNGAN"}
+                <Sparkles className="w-5 h-5 text-amber-500 animate-bounce shrink-0" />
+              </h1>
+              <p className="text-[11px] text-slate-500 font-medium leading-normal mt-0.5">
+                Panel Utama Administrator • Pemantauan Presensi GPS Terpadu, Persetujuan Izin Resmi & Rekapitulasi Otomatis
+              </p>
+            </div>
+          </div>
+
+          <div className="flex items-center gap-3 bg-amber-50/80 border border-amber-200/50 px-4 py-2.5 rounded-xl text-left shadow-2xs self-stretch md:self-auto shrink-0">
+            <div className="space-y-0.5">
+              <div className="text-[8px] font-bold text-amber-700 uppercase tracking-widest">Kredibilitas Portal</div>
+              <div className="text-xs font-black text-slate-800 tracking-wide uppercase">SDN 7 Pedungan</div>
+              <div className="text-[9px] font-bold text-slate-500">Tingkat Akurasi Geofencing Tinggi</div>
+            </div>
+          </div>
+        </div>
+
         {/* Tab Navigation Menu + Theme Switcher */}
-       <div className="flex flex-col sm:flex-row sm:items-center justify-between border-b border-slate-200 gap-3 pb-2">
+       <div className="flex flex-col lg:flex-row lg:items-center justify-between border-b border-slate-200 gap-4 pb-2">
          <div className="flex border-b border-slate-200 overflow-x-auto gap-2 no-scrollbar w-full sm:w-auto">
            {[
              { id: 'rekap', label: 'Rekap Absensi', icon: FileSpreadsheet },
@@ -600,7 +1224,26 @@ export default function AdminDashboard({
            })}
          </div>
 
-         {/* Cool Theme Switcher */}
+         {/* Cool Theme Switcher + General Refresh Button */}
+          <button
+            onClick={async () => {
+              setIsRefreshing(true);
+              try {
+                await onRefreshData();
+              } catch (err) {
+                console.error(err);
+              } finally {
+                setIsRefreshing(false);
+              }
+            }}
+            disabled={isRefreshing}
+            className="flex items-center gap-1.5 px-2.5 py-1.5 bg-white hover:bg-slate-50 border border-slate-200 rounded-full text-[10px] font-bold text-slate-600 uppercase tracking-wider transition-all cursor-pointer shadow-xs active:scale-95 disabled:opacity-50 shrink-0 mr-1"
+            id="btn-admin-header-general-refresh"
+            title="Refresh Data dari Google Sheets"
+          >
+            <RefreshCw className={`w-3 h-3 text-slate-500 ${isRefreshing ? 'animate-spin' : ''}`} />
+            <span>{isRefreshing ? 'Memuat...' : 'Refresh'}</span>
+          </button>
          <div className="flex items-center gap-2 bg-slate-100 p-1.5 rounded-full self-start sm:self-auto border border-slate-200/60 shadow-inner">
            <Palette className={`w-3.5 h-3.5 ${currentTheme.primaryText} ml-1`} />
            <span className="text-[10px] font-bold text-slate-500 uppercase pr-1 hidden md:inline">Tema:</span>
@@ -631,6 +1274,11 @@ export default function AdminDashboard({
           animate={{ opacity: 1, y: 0 }}
           transition={{ duration: 0.3, ease: 'easeOut' }}
         >
+          <SectionHeader
+            title="Rekapitulasi Absensi & Payroll Bulanan"
+            subtitle="Laporan analisis kehadiran berkala, perhitungan denda keterlambatan otomatis, dan pencetakan slip gaji/KOP surat resmi."
+            icon={FileSpreadsheet}
+          />
           
           {/* Bento Stats Grid */}
           <div className="grid grid-cols-2 lg:grid-cols-6 gap-3">
@@ -746,6 +1394,31 @@ export default function AdminDashboard({
                 >
                   <Printer className="w-3.5 h-3.5" />
                   Buka Preview & Cetak
+                </button>
+              </div>
+            </div>
+
+            {/* Quick Export Footer */}
+            <div className="border-t border-white/10 pt-3.5 flex flex-col sm:flex-row sm:items-center justify-between gap-3 text-xs text-slate-300">
+              <span className="font-semibold text-[10px] uppercase tracking-wider text-slate-400">Ekspor Cepat ke Excel (Format .csv):</span>
+              <div className="flex flex-wrap items-center gap-2">
+                <button
+                  type="button"
+                  onClick={handleQuickExportAttendance}
+                  className="px-2.5 py-1.5 bg-white/10 hover:bg-white/20 active:bg-white/30 text-emerald-300 hover:text-white rounded text-[11px] font-bold uppercase tracking-wider flex items-center gap-1.5 transition-all cursor-pointer border border-emerald-500/20"
+                  title="Unduh daftar kehadiran untuk Excel"
+                >
+                  <FileSpreadsheet className="w-3.5 h-3.5 text-emerald-400" />
+                  <span>Excel Log Kehadiran</span>
+                </button>
+                <button
+                  type="button"
+                  onClick={handleQuickExportPayroll}
+                  className="px-2.5 py-1.5 bg-white/10 hover:bg-white/20 active:bg-white/30 text-emerald-300 hover:text-white rounded text-[11px] font-bold uppercase tracking-wider flex items-center gap-1.5 transition-all cursor-pointer border border-emerald-500/20"
+                  title="Unduh rekapitulasi gaji untuk Excel"
+                >
+                  <FileSpreadsheet className="w-3.5 h-3.5 text-emerald-400" />
+                  <span>Excel Rekap Gaji</span>
                 </button>
               </div>
             </div>
@@ -947,6 +1620,13 @@ export default function AdminDashboard({
           animate={{ opacity: 1, y: 0 }}
           transition={{ duration: 0.3, ease: 'easeOut' }}
         >
+          <div className="lg:col-span-12">
+            <SectionHeader
+              title="Manajemen Database Pegawai Resmi"
+              subtitle="Pendaftaran staf pendidik baru, pengisian detail NIP, penentuan jabatan, koordinasi absensi, dan pengaturan gaji pokok."
+              icon={Users}
+            />
+          </div>
           
           {/* Add Employee Form */}
           <div className="lg:col-span-5 bg-white border border-slate-200 rounded-lg p-4 shadow-sm space-y-4">
@@ -1005,7 +1685,14 @@ export default function AdminDashboard({
                 <label className="block text-[10px] font-bold text-slate-500 uppercase tracking-wider mb-1 pl-1">Jabatan / Peran</label>
                 <select
                   value={newEmpRole}
-                  onChange={(e) => setNewEmpRole(e.target.value)}
+                  onChange={(e) => {
+                    setNewEmpRole(e.target.value);
+                    if (e.target.value === 'Lainnya') {
+                      setNewEmpRoleIsCustom(true);
+                    } else {
+                      setNewEmpRoleIsCustom(false);
+                    }
+                  }}
                   className="w-full px-2.5 py-1.5 bg-slate-50 border border-slate-200 rounded text-xs focus:outline-none focus:border-blue-500 focus:bg-white text-slate-700 font-semibold"
                   id="input-new-emp-role"
                 >
@@ -1015,8 +1702,24 @@ export default function AdminDashboard({
                   <option value="Staf Tata Usaha">Staf Tata Usaha</option>
                   <option value="Pustakawan">Pustakawan</option>
                   <option value="Penjaga Sekolah">Penjaga Sekolah</option>
+                  <option value="Lainnya">Lainnya (Input Manual...)</option>
                 </select>
               </div>
+
+              {(newEmpRole === 'Lainnya' || newEmpRoleIsCustom) && (
+                <div className="animate-fade-in">
+                  <label className="block text-[10px] font-bold text-blue-600 uppercase tracking-wider mb-1 pl-1">Sebutkan Jabatan Kustom</label>
+                  <input
+                    type="text"
+                    required
+                    placeholder="Masukkan jabatan/peran manual..."
+                    value={newEmpRoleCustomVal}
+                    onChange={(e) => setNewEmpRoleCustomVal(e.target.value)}
+                    className="w-full px-2.5 py-1.5 bg-blue-50/50 border border-blue-200 rounded text-xs focus:outline-none focus:border-blue-500 focus:bg-white text-slate-700 font-semibold placeholder:text-slate-400"
+                    id="input-new-emp-role-custom"
+                  />
+                </div>
+              )}
 
               <div>
                 <label className="block text-[10px] font-bold text-slate-500 uppercase tracking-wider mb-1 pl-1">Email Akun Google</label>
@@ -1115,13 +1818,20 @@ export default function AdminDashboard({
       {/* LOKASI TAB */}
       {activeTab === 'lokasi' && (
         <motion.div 
-          className="max-w-2xl mx-auto bg-white border border-slate-200 rounded-lg p-4 shadow-sm space-y-4"
+          className="max-w-2xl mx-auto space-y-4"
           initial={{ opacity: 0, y: 15 }}
           animate={{ opacity: 1, y: 0 }}
           transition={{ duration: 0.3, ease: 'easeOut' }}
         >
+          <SectionHeader
+            title="Konfigurasi Titik Lokasi & Radius GPS"
+            subtitle="Atur koordinat pusat instansi, sesuaikan toleransi radius geofencing (meter), dan pastikan presensi pegawai presisi."
+            icon={MapPin}
+          />
           
-          <div className="flex items-center gap-2 border-b border-slate-100 pb-2">
+          <div className="bg-white border border-slate-200 rounded-lg p-4 shadow-sm space-y-4">
+            
+            <div className="flex items-center gap-2 border-b border-slate-100 pb-2">
             <MapPin className="w-4 h-4 text-blue-600" />
             <h3 className="text-xs font-bold text-slate-400 uppercase tracking-widest">Atur Titik GPS & Kunci Radius</h3>
           </div>
@@ -1409,6 +2119,7 @@ export default function AdminDashboard({
               Simpan Konfigurasi Sekolah & Aturan Kerja
             </button>
           </form>
+          </div>
         </motion.div>
       )}
 
@@ -1420,6 +2131,13 @@ export default function AdminDashboard({
           animate={{ opacity: 1, y: 0 }}
           transition={{ duration: 0.3, ease: 'easeOut' }}
         >
+          <SectionHeader
+            title="Persetujuan Izin Resmi & Dinas Luar"
+            subtitle="Tinjau unggahan dokumen bukti surat keterangan, setujui/tolak permohonan dinas luar, cuti tahunan, atau izin sakit pegawai."
+            badge={leaveRequests.filter(req => req.status === 'Pending').length ? `${leaveRequests.filter(req => req.status === 'Pending').length} Pending` : undefined}
+            icon={UserCheck}
+          />
+          
           <div className="bg-white border border-slate-200 rounded-lg p-4 shadow-sm">
             <div className="flex items-center justify-between border-b border-slate-100 pb-2 mb-4">
               <div className="flex items-center gap-2">
@@ -1595,13 +2313,20 @@ export default function AdminDashboard({
       {/* PENGATURAN DATABASE TAB */}
       {activeTab === 'pengaturan' && (
         <motion.div 
-          className="max-w-2xl mx-auto bg-white border border-slate-200 rounded-lg p-4 shadow-sm space-y-4"
+          className="max-w-2xl mx-auto space-y-4"
           initial={{ opacity: 0, y: 15 }}
           animate={{ opacity: 1, y: 0 }}
           transition={{ duration: 0.3, ease: 'easeOut' }}
         >
+          <SectionHeader
+            title="Integrasi Kredensial & Pengaturan Database"
+            subtitle="Konfigurasi ID Google Spreadsheet cloud Anda, sinkronisasi token otentikasi Google, dan ubah pengaturan brand sekolah."
+            icon={Settings}
+          />
           
-          <div className="flex items-center gap-2 border-b border-slate-100 pb-2">
+          <div className="bg-white border border-slate-200 rounded-lg p-4 shadow-sm space-y-4">
+            
+            <div className="flex items-center gap-2 border-b border-slate-100 pb-2">
             <Settings className="w-4 h-4 text-blue-600" />
             <h3 className="text-xs font-bold text-slate-400 uppercase tracking-widest">Ubah ID Spreadsheet Database</h3>
           </div>
@@ -1636,6 +2361,132 @@ export default function AdminDashboard({
             </button>
           </form>
 
+          {/* UPLOAD LOGO SEKOLAH FORM */}
+          <div className="flex items-center gap-2 border-b border-slate-100 pb-2 pt-2">
+            <Palette className="w-4 h-4 text-blue-600" />
+            <h3 className="text-xs font-bold text-slate-400 uppercase tracking-widest">Logo Sekolah</h3>
+          </div>
+
+          <div className="space-y-3">
+            <p className="text-[11px] text-slate-500 leading-relaxed">
+              Unggah logo resmi sekolah untuk mengubah icon default di header dan menyisipkan logo secara otomatis pada kop surat cetak rekapitulasi absensi.
+            </p>
+
+            <div className="flex flex-col sm:flex-row items-center gap-4 p-3 bg-slate-50 border border-slate-200 rounded-lg">
+              <div className="w-16 h-16 bg-white rounded-lg border border-slate-200 flex items-center justify-center overflow-hidden shrink-0 shadow-xs">
+                {schoolConfig.logoUrl ? (
+                  <img src={schoolConfig.logoUrl} alt="Logo" className="w-full h-full object-contain" referrerPolicy="no-referrer" />
+                ) : (
+                  <School className="w-8 h-8 text-slate-400" />
+                )}
+              </div>
+
+              <div className="space-y-1.5 flex-grow w-full">
+                <div className="flex flex-wrap items-center gap-2">
+                  <label className="px-3 py-1.5 bg-blue-600 hover:bg-blue-700 text-white border border-blue-700 text-[10px] font-bold uppercase tracking-wider rounded cursor-pointer flex items-center gap-1 shadow-sm transition-all active:scale-95">
+                    <Upload className="w-3.5 h-3.5" />
+                    Pilih File Logo
+                    <input
+                      type="file"
+                      accept="image/*"
+                      onChange={(e) => {
+                        const file = e.target.files?.[0];
+                        if (file) {
+                          if (file.size > 2 * 1024 * 1024) {
+                            alert("Ukuran file logo maksimal adalah 2MB");
+                            return;
+                          }
+                          const reader = new FileReader();
+                          reader.onloadend = () => {
+                            const base64String = reader.result as string;
+                            const updatedConfig = {
+                              ...schoolConfig,
+                              logoUrl: base64String
+                            };
+                            onUpdateSchoolConfig(updatedConfig);
+                          };
+                          reader.readAsDataURL(file);
+                        }
+                      }}
+                      className="hidden"
+                      id="input-logo-school-upload"
+                    />
+                  </label>
+
+                  {schoolConfig.logoUrl && (
+                    <button
+                      type="button"
+                      onClick={() => {
+                        if (confirm("Apakah Anda yakin ingin menghapus logo sekolah ini?")) {
+                          const updatedConfig = {
+                            ...schoolConfig,
+                            logoUrl: ""
+                          };
+                          onUpdateSchoolConfig(updatedConfig);
+                        }
+                      }}
+                      className="px-3 py-1.5 bg-red-50 hover:bg-red-100 text-red-600 border border-red-200 text-[10px] font-bold uppercase tracking-wider rounded transition-all flex items-center gap-1 active:scale-95"
+                      id="btn-delete-logo-school"
+                    >
+                      Hapus Logo
+                    </button>
+                  )}
+
+                  {/* TOMBOL UNGGAH BACKGROUND SEKOLAH DI SEBELAH KANAN */}
+                  <label className="px-3 py-1.5 bg-slate-700 hover:bg-slate-800 text-white border border-slate-800 text-[10px] font-bold uppercase tracking-wider rounded cursor-pointer flex items-center gap-1 shadow-sm transition-all active:scale-95">
+                    <Upload className="w-3.5 h-3.5" />
+                    Upload BG (50%)
+                    <input
+                      type="file"
+                      accept="image/*"
+                      onChange={(e) => {
+                        const file = e.target.files?.[0];
+                        if (file) {
+                          if (file.size > 3 * 1024 * 1024) {
+                            alert("Ukuran file background kustom maksimal adalah 3MB");
+                            return;
+                          }
+                          const reader = new FileReader();
+                          reader.onloadend = () => {
+                            const base64String = reader.result as string;
+                            const updatedConfig = {
+                              ...schoolConfig,
+                              backgroundUrl: base64String
+                            };
+                            onUpdateSchoolConfig(updatedConfig);
+                          };
+                          reader.readAsDataURL(file);
+                        }
+                      }}
+                      className="hidden"
+                      id="input-bg-school-upload"
+                    />
+                  </label>
+
+                  {schoolConfig.backgroundUrl && (
+                    <button
+                      type="button"
+                      onClick={() => {
+                        if (confirm("Apakah Anda yakin ingin menghapus background kustom dan kembali ke motif batik default?")) {
+                          const updatedConfig = {
+                            ...schoolConfig,
+                            backgroundUrl: ""
+                          };
+                          onUpdateSchoolConfig(updatedConfig);
+                        }
+                      }}
+                      className="px-3 py-1.5 bg-amber-50 hover:bg-amber-100 text-amber-600 border border-amber-200 text-[10px] font-bold uppercase tracking-wider rounded transition-all flex items-center gap-1 active:scale-95"
+                      id="btn-delete-bg-school"
+                    >
+                      Reset BG
+                    </button>
+                  )}
+                </div>
+                <p className="text-[9px] text-slate-400 font-medium">Format yang didukung: PNG, JPG, JPEG, WEBP. Maks 2MB untuk Logo & 3MB untuk Background (otomatis diterapkan 50% opacity).</p>
+              </div>
+            </div>
+          </div>
+
           <div className="p-3 bg-slate-50 rounded border border-slate-200 space-y-2">
             <h4 className="text-[10px] font-bold text-slate-700 uppercase tracking-wider">📋 Catatan Struktur Google Sheets:</h4>
             <p className="text-[11px] text-slate-500 leading-relaxed">
@@ -1647,6 +2498,179 @@ export default function AdminDashboard({
               <li><strong>"Pengajuan"</strong>: Menampung data pengajuan dinas luar/cuti/sakit.</li>
             </ul>
           </div>
+          </div>
+        </motion.div>
+      )}
+
+      {/* PENGATURAN FIREBASE */}
+      {activeTab === 'pengaturan' && (
+        <motion.div 
+          className="max-w-2xl mx-auto bg-white border border-slate-200 rounded-lg p-4 shadow-sm space-y-4 mt-4"
+          initial={{ opacity: 0, y: 15 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ duration: 0.3, ease: 'easeOut', delay: 0.1 }}
+        >
+          <div className="flex items-center justify-between border-b border-slate-100 pb-2">
+            <div className="flex items-center gap-2">
+              <RefreshCw className="w-4 h-4 text-emerald-600" />
+              <h3 className="text-xs font-bold text-slate-400 uppercase tracking-widest">Koneksi Proyek Firebase</h3>
+            </div>
+            {localStorage.getItem('sipeg_custom_firebase_config') ? (
+              <span className="px-1.5 py-0.5 bg-emerald-100 text-emerald-800 text-[8px] font-black uppercase rounded border border-emerald-200 tracking-wider">
+                Proyek Kustom Aktif
+              </span>
+            ) : (
+              <span className="px-1.5 py-0.5 bg-slate-100 text-slate-600 text-[8px] font-black uppercase rounded border border-slate-200 tracking-wider">
+                Sistem Default (Studio)
+              </span>
+            )}
+          </div>
+
+          <p className="text-[11px] text-slate-500 leading-relaxed">
+            Anda dapat memutuskan koneksi default <code className="bg-slate-100 px-1 py-0.5 rounded text-rose-600 font-mono text-[10px]">yogic-zucchini-n9nlt</code> dan menghubungkan aplikasi ini ke proyek Firebase Anda sendiri (seperti <strong className="text-slate-700">absen-stupa-baru</strong>) untuk kustomisasi penuh.
+          </p>
+
+          {fbSuccess && (
+            <div className="p-2.5 bg-emerald-50 border border-emerald-200 text-emerald-800 rounded text-xs font-semibold">
+              {fbSuccess}
+            </div>
+          )}
+
+          <div className="bg-slate-50 p-3.5 rounded-lg border border-slate-200 space-y-3">
+            <h4 className="text-[10px] font-black text-slate-700 uppercase tracking-wider flex items-center gap-1.5">
+              <span>⚡ Cara Praktis: Tempel & Ekstrak</span>
+            </h4>
+            <p className="text-[11px] text-slate-500 leading-relaxed">
+              Buka Firebase Console &gt; Project Settings &gt; Apps, lalu salin kode konfigurasi JavaScript/JSON Anda, tempel di bawah ini, dan klik tombol ekstrak:
+            </p>
+            <div className="space-y-2">
+              <textarea
+                value={fbPastedConfig}
+                onChange={(e) => setFbPastedConfig(e.target.value)}
+                placeholder={`const firebaseConfig = {
+  apiKey: "AIzaSy...",
+  authDomain: "absen-stupa-baru.firebaseapp.com",
+  projectId: "absen-stupa-baru",
+  storageBucket: "absen-stupa-baru.firebasestorage.app",
+  messagingSenderId: "123456789",
+  appId: "1:12345:web:abcd"
+};`}
+                className="w-full h-24 p-2 bg-white border border-slate-200 rounded text-[10px] font-mono focus:outline-none focus:border-blue-500 text-slate-700"
+              />
+              <button
+                type="button"
+                onClick={handleAutoExtractFirebaseConfig}
+                className="px-3 py-1.5 bg-blue-600 hover:bg-blue-700 text-white text-[10px] font-bold uppercase tracking-wider rounded transition-all cursor-pointer shadow-sm"
+              >
+                Ekstrak Parameter Otomatis
+              </button>
+            </div>
+          </div>
+
+          <form onSubmit={handleSaveFirebaseConfig} className="space-y-3">
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+              <div>
+                <label className="block text-[9px] font-bold text-slate-500 uppercase tracking-wider mb-1 pl-1">Firebase Project ID</label>
+                <input
+                  type="text"
+                  required
+                  placeholder="absen-stupa-baru"
+                  value={fbProjectId}
+                  onChange={(e) => setFbProjectId(e.target.value)}
+                  className="w-full px-2.5 py-1.5 bg-slate-50 border border-slate-200 rounded text-xs focus:outline-none focus:border-blue-500 focus:bg-white text-slate-700 font-mono"
+                />
+              </div>
+
+              <div>
+                <label className="block text-[9px] font-bold text-slate-500 uppercase tracking-wider mb-1 pl-1">API Key</label>
+                <input
+                  type="text"
+                  required
+                  placeholder="AIzaSy..."
+                  value={fbApiKey}
+                  onChange={(e) => setFbApiKey(e.target.value)}
+                  className="w-full px-2.5 py-1.5 bg-slate-50 border border-slate-200 rounded text-xs focus:outline-none focus:border-blue-500 focus:bg-white text-slate-700 font-mono"
+                />
+              </div>
+
+              <div>
+                <label className="block text-[9px] font-bold text-slate-500 uppercase tracking-wider mb-1 pl-1">App ID</label>
+                <input
+                  type="text"
+                  placeholder="1:123456:web:abcd..."
+                  value={fbAppId}
+                  onChange={(e) => setFbAppId(e.target.value)}
+                  className="w-full px-2.5 py-1.5 bg-slate-50 border border-slate-200 rounded text-xs focus:outline-none focus:border-blue-500 focus:bg-white text-slate-700 font-mono"
+                />
+              </div>
+
+              <div>
+                <label className="block text-[9px] font-bold text-slate-500 uppercase tracking-wider mb-1 pl-1">Auth Domain</label>
+                <input
+                  type="text"
+                  placeholder="absen-stupa-baru.firebaseapp.com"
+                  value={fbAuthDomain}
+                  onChange={(e) => setFbAuthDomain(e.target.value)}
+                  className="w-full px-2.5 py-1.5 bg-slate-50 border border-slate-200 rounded text-xs focus:outline-none focus:border-blue-500 focus:bg-white text-slate-700 font-mono"
+                />
+              </div>
+
+              <div>
+                <label className="block text-[9px] font-bold text-slate-500 uppercase tracking-wider mb-1 pl-1">Storage Bucket</label>
+                <input
+                  type="text"
+                  placeholder="absen-stupa-baru.firebasestorage.app"
+                  value={fbStorageBucket}
+                  onChange={(e) => setFbStorageBucket(e.target.value)}
+                  className="w-full px-2.5 py-1.5 bg-slate-50 border border-slate-200 rounded text-xs focus:outline-none focus:border-blue-500 focus:bg-white text-slate-700 font-mono"
+                />
+              </div>
+
+              <div>
+                <label className="block text-[9px] font-bold text-slate-500 uppercase tracking-wider mb-1 pl-1">Messaging Sender ID</label>
+                <input
+                  type="text"
+                  placeholder="1234567890"
+                  value={fbMessagingSenderId}
+                  onChange={(e) => setFbMessagingSenderId(e.target.value)}
+                  className="w-full px-2.5 py-1.5 bg-slate-50 border border-slate-200 rounded text-xs focus:outline-none focus:border-blue-500 focus:bg-white text-slate-700 font-mono"
+                />
+              </div>
+            </div>
+
+            <div>
+              <label className="block text-[9px] font-bold text-slate-500 uppercase tracking-wider mb-1 pl-1">Google OAuth Client ID (Opsional)</label>
+              <input
+                type="text"
+                placeholder="123456-abcdef.apps.googleusercontent.com"
+                value={fbOAuthClientId}
+                onChange={(e) => setFbOAuthClientId(e.target.value)}
+                className="w-full px-2.5 py-1.5 bg-slate-50 border border-slate-200 rounded text-xs focus:outline-none focus:border-blue-500 focus:bg-white text-slate-700 font-mono text-[10px]"
+              />
+              <p className="text-[9px] text-slate-400 mt-1 pl-1">
+                Catatan: Diperlukan untuk proses Google Sign-In jika Anda menggunakan domain hosting Anda sendiri.
+              </p>
+            </div>
+
+            <div className="flex gap-2.5 pt-2">
+              <button
+                type="submit"
+                className="flex-1 flex items-center justify-center gap-2 px-4 py-2.5 bg-emerald-600 hover:bg-emerald-700 text-white rounded text-xs font-bold transition-all cursor-pointer uppercase tracking-wider shadow-sm"
+              >
+                <Save className="w-3.5 h-3.5" />
+                Simpan & Hubungkan Proyek Baru
+              </button>
+              {localStorage.getItem('sipeg_custom_firebase_config') && (
+                <button
+                  type="button"
+                  onClick={handleResetFirebaseConfig}
+                  className="px-4 py-2.5 bg-slate-100 hover:bg-slate-200 text-slate-700 border border-slate-300 rounded text-xs font-bold transition-all cursor-pointer uppercase tracking-wider shadow-sm"
+                >
+                  Reset ke Default
+                </button>
+              )}
+            </div>
+          </form>
         </motion.div>
       )}
 
@@ -1803,7 +2827,14 @@ export default function AdminDashboard({
                   <label className="block text-[10px] font-bold text-slate-500 uppercase tracking-wider mb-1 pl-1">Jabatan / Peran</label>
                   <select
                     value={editEmpRole}
-                    onChange={(e) => setEditEmpRole(e.target.value)}
+                    onChange={(e) => {
+                      setEditEmpRole(e.target.value);
+                      if (e.target.value === 'Lainnya') {
+                        setEditEmpRoleIsCustom(true);
+                      } else {
+                        setEditEmpRoleIsCustom(false);
+                      }
+                    }}
                     className="w-full px-2.5 py-1.5 bg-slate-50 border border-slate-200 rounded text-xs focus:outline-none focus:border-blue-500 focus:bg-white text-slate-700 font-semibold"
                   >
                     <option value="Kepala Sekolah">Kepala Sekolah</option>
@@ -1812,6 +2843,7 @@ export default function AdminDashboard({
                     <option value="Staf Tata Usaha">Staf Tata Usaha</option>
                     <option value="Pustakawan">Pustakawan</option>
                     <option value="Penjaga Sekolah">Penjaga Sekolah</option>
+                    <option value="Lainnya">Lainnya (Input Manual...)</option>
                   </select>
                 </div>
                 <div>
@@ -1825,6 +2857,20 @@ export default function AdminDashboard({
                   />
                 </div>
               </div>
+
+              {(editEmpRole === 'Lainnya' || editEmpRoleIsCustom) && (
+                <div className="animate-fade-in">
+                  <label className="block text-[10px] font-bold text-blue-600 uppercase tracking-wider mb-1 pl-1">Sebutkan Jabatan Kustom</label>
+                  <input
+                    type="text"
+                    required
+                    placeholder="Masukkan jabatan/peran manual..."
+                    value={editEmpRoleCustomVal}
+                    onChange={(e) => setEditEmpRoleCustomVal(e.target.value)}
+                    className="w-full px-2.5 py-1.5 bg-blue-50/50 border border-blue-200 rounded text-xs focus:outline-none focus:border-blue-500 focus:bg-white text-slate-700 font-semibold placeholder:text-slate-400"
+                  />
+                </div>
+              )}
 
               {/* OVERRIDE HOURS SECTION */}
               <div className="border-t border-slate-100 pt-3 space-y-3">
@@ -1927,117 +2973,37 @@ export default function AdminDashboard({
       )}
 
       {/* PRINT PREVIEW MODAL */}
-      {showPrintPreview && (() => {
-        const getMonthNameIndo = (mCode: string) => {
-          const list: Record<string, string> = {
-            '01': 'Januari', '02': 'Februari', '03': 'Maret', '04': 'April',
-            '05': 'Mei', '06': 'Juni', '07': 'Juli', '08': 'Agustus',
-            '09': 'September', '10': 'Oktober', '11': 'November', '12': 'Desember',
-            'all': 'Semua Bulan'
-          };
-          return list[mCode] || mCode;
-        };
-
-        const filteredEmployeesForRekap = rekapEmployeeId === 'all'
-          ? employees
-          : employees.filter(emp => emp.id === rekapEmployeeId);
-
-        const computedRekapRows = filteredEmployeesForRekap.map((emp) => {
-          const empRecords = attendance.filter(record => {
-            if (record.employeeId !== emp.id) return false;
-            if (!record.date) return false;
-            const recYear = record.date.substring(0, 4);
-            const recMonth = record.date.substring(5, 7);
-            
-            const matchesMonth = rekapMonth === 'all' || recMonth === rekapMonth;
-            const matchesYear = rekapYear === 'all' || recYear === rekapYear;
-            return matchesMonth && matchesYear;
-          });
-
-          const totalHadir = empRecords.filter(r => r.type === 'Masuk').length;
-          const totalTerlambat = empRecords.filter(r => r.type === 'Masuk' && r.status === 'Terlambat').length;
-          const totalTepatWaktu = empRecords.filter(r => r.type === 'Masuk' && r.status === 'Tepat Waktu').length;
-          const totalSakit = empRecords.filter(r => r.status === 'Sakit').length;
-          const totalCuti = empRecords.filter(r => r.status === 'Cuti').length;
-          const totalDinas = empRecords.filter(r => r.status === 'Dinas Luar').length;
-          
-          const totalDenda = empRecords.reduce((sum, r) => {
-            // 1. Coba ekstraksi langsung dari "Potongan: Rp ..." di kolom keterangan/notes
-            const matchPotongan = r.notes?.match(/Potongan:\s*Rp\s*([\d\.]+)/i);
-            if (matchPotongan && matchPotongan[1]) {
-              const cleanNum = matchPotongan[1].replace(/\./g, '');
-              const parsed = parseInt(cleanNum, 10);
-              if (!isNaN(parsed)) return sum + parsed;
-            }
-
-            // 2. Coba ekstraksi menit terlambat dari keterangan/notes
-            const matchTerlambat = r.notes?.match(/Terlambat\s*(\d+)m/i);
-            if (matchTerlambat && matchTerlambat[1]) {
-              const mins = parseInt(matchTerlambat[1], 10);
-              const rate = schoolConfig.latePenaltyPerMinute ?? 1000;
-              return sum + (mins * rate);
-            }
-
-            // 3. Coba ekstraksi menit mendahului pulang dari keterangan/notes
-            const matchMendahului = r.notes?.match(/Mendahului\s*(?:Pulang\s*)?(\d+)m/i);
-            if (matchMendahului && matchMendahului[1]) {
-              const mins = parseInt(matchMendahului[1], 10);
-              const rate = schoolConfig.earlyPenaltyPerMinute ?? 1000;
-              return sum + (mins * rate);
-            }
-
-            return sum + (r.penaltyAmount || 0);
-          }, 0);
-          const gajiPokok = emp.baseSalary || 4000000;
-          const gajiBersih = Math.max(0, gajiPokok - totalDenda);
-
-          return {
-            id: emp.id,
-            name: emp.name,
-            role: emp.role,
-            gajiPokok,
-            totalHadir,
-            totalTerlambat,
-            totalTepatWaktu,
-            totalSakit,
-            totalCuti,
-            totalDinas,
-            totalDenda,
-            gajiBersih
-          };
-        });
-
-        const filteredAttendanceForReport = attendance.filter(record => {
-          if (!record.date) return false;
-          if (rekapEmployeeId !== 'all' && record.employeeId !== rekapEmployeeId) return false;
-          
-          const recYear = record.date.substring(0, 4);
-          const recMonth = record.date.substring(5, 7);
-          
-          const matchesMonth = rekapMonth === 'all' || recMonth === rekapMonth;
-          const matchesYear = rekapYear === 'all' || recYear === rekapYear;
-          return matchesMonth && matchesYear;
-        });
-
-        filteredAttendanceForReport.sort((a, b) => {
-          const dateComp = (a.date || '').localeCompare(b.date || '');
-          if (dateComp !== 0) return dateComp;
-          return (a.time || '').localeCompare(b.time || '');
-        });
-
-        return (
-          <div className="fixed inset-0 bg-slate-900/60 backdrop-blur-sm flex items-center justify-center z-50 p-4 overflow-y-auto print-modal-overlay">
+      {showPrintPreview && (
+        <div className="fixed inset-0 bg-slate-900/60 backdrop-blur-sm flex items-center justify-center z-50 p-4 overflow-y-auto print-modal-overlay">
             <div className="bg-white rounded-xl shadow-2xl max-w-4xl w-full p-6 space-y-4 my-8 relative">
               
               {/* Modal Header Controls */}
-              <div className="flex items-center justify-between border-b border-slate-200 pb-3 no-print">
+              <div className="flex flex-col sm:flex-row sm:items-center justify-between border-b border-slate-200 pb-3 gap-3 no-print">
                 <div className="flex items-center gap-2 text-emerald-600">
                   <Printer className="w-5 h-5" />
                   <h3 className="text-sm font-extrabold uppercase tracking-widest text-slate-800">
                     Preview Rekap Absensi & Gaji Bulanan
                   </h3>
                 </div>
-                <div className="flex items-center gap-2">
+                <div className="flex flex-wrap items-center gap-2">
+                  <button
+                    type="button"
+                    onClick={() => handleExportAttendanceToCSV(sortedAttendanceForReport)}
+                    className="px-3 py-2 bg-slate-100 hover:bg-slate-200 text-emerald-700 border border-slate-300 text-xs font-bold uppercase tracking-wider rounded transition-all cursor-pointer flex items-center gap-1.5 shadow-sm"
+                    title="Ekspor daftar kehadiran ke format Excel (CSV)"
+                  >
+                    <FileSpreadsheet className="w-3.5 h-3.5 text-emerald-600" />
+                    <span>Excel Kehadiran</span>
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => handleExportPayrollToCSV(computedRekapRows)}
+                    className="px-3 py-2 bg-slate-100 hover:bg-slate-200 text-emerald-700 border border-slate-300 text-xs font-bold uppercase tracking-wider rounded transition-all cursor-pointer flex items-center gap-1.5 shadow-sm"
+                    title="Ekspor rekap gaji ke format Excel (CSV)"
+                  >
+                    <FileSpreadsheet className="w-3.5 h-3.5 text-emerald-600" />
+                    <span>Excel Rekap Gaji</span>
+                  </button>
                   <button
                     onClick={() => {
                       window.print();
@@ -2049,6 +3015,26 @@ export default function AdminDashboard({
                     Cetak Sekarang (Print)
                   </button>
                   <button
+                    type="button"
+                    onClick={handleExportToPDF}
+                    disabled={isGeneratingPDF}
+                    className="px-4 py-2 bg-blue-600 hover:bg-blue-500 disabled:opacity-50 text-white text-xs font-bold uppercase tracking-wider rounded transition-all cursor-pointer flex items-center gap-2 shadow"
+                    title="Ekspor laporan ini ke file PDF secara otomatis"
+                    id="btn-export-rekap-pdf"
+                  >
+                    {isGeneratingPDF ? (
+                      <>
+                        <Loader2 className="w-3.5 h-3.5 animate-spin" />
+                        <span>Mengonversi...</span>
+                      </>
+                    ) : (
+                      <>
+                        <Download className="w-3.5 h-3.5" />
+                        <span>Unduh PDF Laporan</span>
+                      </>
+                    )}
+                  </button>
+                  <button
                     onClick={() => setShowPrintPreview(false)}
                     className="px-3 py-2 bg-slate-100 hover:bg-slate-200 text-slate-700 border border-slate-300 text-xs font-bold uppercase tracking-wider rounded transition-all cursor-pointer"
                     id="btn-close-print-preview"
@@ -2056,6 +3042,11 @@ export default function AdminDashboard({
                     Tutup
                   </button>
                 </div>
+              </div>
+
+              {/* Info/Warning Bar inside Preview */}
+              <div className="bg-amber-50 border border-amber-200 text-amber-800 p-3 rounded-lg text-[11px] leading-relaxed font-medium no-print">
+                💡 <strong>Tips Cetak:</strong> Jika tombol <strong>Cetak Sekarang</strong> tidak memunculkan dialog cetak karena batasan iFrame, silakan buka aplikasi ini di <strong>Tab Baru</strong> (klik tombol <strong>Buka Aplikasi / Open in new tab</strong> di pojok kanan atas) untuk mencetak secara langsung dan lancar menggunakan printer fisik atau disimpan sebagai PDF.
               </div>
 
               {/* Printable Report Section */}
@@ -2066,71 +3057,80 @@ export default function AdminDashboard({
                 {/* Dynamic style tag that hides everything else during native window.print() */}
                 <style>{`
                   @media print {
-                    /* Hide header, footer, main app content, and anything marked as no-print */
-                    header, main, footer, .no-print, button, select, input {
-                      display: none !important;
+                    html, body, #root, main, .print-modal-overlay {
+                      height: auto !important;
+                      overflow: visible !important;
+                      position: static !important;
+                      background: white !important;
                     }
-                    /* Ensure print-modal-overlay is positioned perfectly for printing */
-                    .print-modal-overlay {
+                    body * {
+                      visibility: hidden !important;
+                    }
+                    #print-section, #print-section * {
+                      visibility: visible !important;
+                    }
+                    #print-section {
                       position: absolute !important;
                       left: 0 !important;
                       top: 0 !important;
                       width: 100% !important;
-                      height: auto !important;
-                      background: white !important;
                       padding: 0 !important;
                       margin: 0 !important;
-                      box-shadow: none !important;
                       border: none !important;
+                      box-shadow: none !important;
                       display: block !important;
-                      overflow: visible !important;
-                      inset: 0 !important;
-                      z-index: 999999 !important;
                     }
-                    .print-modal-overlay > div {
-                      border: none !important;
-                      box-shadow: none !important;
-                      padding: 0 !important;
-                      margin: 0 !important;
-                      max-width: 100% !important;
-                      width: 100% !important;
-                    }
-                    #print-section {
-                      border: none !important;
-                      box-shadow: none !important;
-                      padding: 0 !important;
-                      margin: 0 !important;
-                      width: 100% !important;
-                      display: block !important;
+                    .no-print, .no-print * {
+                      display: none !important;
+                      visibility: hidden !important;
                     }
                   }
                 `}</style>
 
                 {/* Report Header (KOP Surat) */}
-                <div className="text-center border-b-2 border-slate-900 pb-4 space-y-1">
-                  <h1 className="text-lg font-black uppercase tracking-tight text-slate-950">{schoolConfig.name || "SEKOLAH DASAR"}</h1>
-                  <p className="text-xs text-slate-500 font-medium">{schoolConfig.address || "Alamat sekolah belum dikonfigurasi"}</p>
-                  <div className="pt-2">
-                    <h2 className="text-sm font-extrabold uppercase tracking-wider bg-slate-100 py-1.5 px-3 rounded inline-block text-slate-800 border border-slate-200">
-                      {rekapEmployeeId === 'all' 
-                        ? 'Laporan Rekapitulasi Kehadiran & Payroll Bulanan' 
-                        : 'Laporan Rekapitulasi Kehadiran & Payroll Individu'
-                      }
-                    </h2>
+                <div className="flex items-center gap-5 border-b-4 border-double border-slate-950 pb-3 text-left">
+                  {schoolConfig.logoUrl ? (
+                    <img 
+                      src={schoolConfig.logoUrl} 
+                      alt="Logo Sekolah" 
+                      className="w-20 h-20 object-contain shrink-0" 
+                      referrerPolicy="no-referrer"
+                    />
+                  ) : (
+                    <div className="w-16 h-16 bg-slate-100 rounded-lg border border-slate-200 flex items-center justify-center shrink-0">
+                      <School className="w-8 h-8 text-slate-400" />
+                    </div>
+                  )}
+                  <div className="space-y-1 text-left flex-grow">
+                    <h2 className="text-[10px] font-bold tracking-wider text-slate-500 uppercase leading-none">Pemerintah Kota Denpasar</h2>
+                    <h1 className="text-lg font-black uppercase tracking-tight text-slate-950 leading-tight">
+                      {schoolConfig.name || "SD NEGERI 7 PEDUNGAN"}
+                    </h1>
+                    <p className="text-[11px] text-slate-600 font-medium leading-normal">
+                      {schoolConfig.address || "Alamat belum dikonfigurasi"}
+                    </p>
+                    <div className="flex flex-wrap items-center gap-x-3 gap-y-1 pt-1.5 border-t border-slate-100">
+                      <span className="text-[9px] font-black uppercase tracking-wider text-slate-800 bg-slate-100 px-2 py-0.5 rounded border border-slate-200 inline-block">
+                        {rekapEmployeeId === 'all' 
+                          ? 'Laporan Rekapitulasi Kehadiran & Payroll Bulanan' 
+                          : 'Laporan Rekapitulasi Kehadiran & Payroll Individu'
+                        }
+                      </span>
+                      <span className="text-[9px] font-bold text-slate-600 font-mono">
+                        Periode: {getMonthNameIndo(rekapMonth)} {rekapYear === 'all' ? 'Semua Tahun' : rekapYear}
+                      </span>
+                    </div>
                   </div>
-                  <p className="text-xs font-bold text-slate-600 pt-1 font-mono">
-                    Periode: {getMonthNameIndo(rekapMonth)} {rekapYear === 'all' ? 'Semua Tahun' : rekapYear}
-                  </p>
                 </div>
 
                 {/* I. DETAIL RIWAYAT KEHADIRAN (LOG ABSENSI) */}
                 <div className="space-y-2">
                   <h3 className="text-xs font-bold uppercase tracking-wider text-slate-900 border-b-2 border-slate-300 pb-1 flex items-center gap-2">
                     <span className="bg-slate-900 text-white px-1.5 py-0.5 rounded text-[9px] font-black">I</span>
-                    <span>Detail Riwayat Kehadiran Pegawai ({filteredAttendanceForReport.length} Log)</span>
+                    <span>Detail Riwayat Kehadiran Pegawai ({sortedAttendanceForReport.length} Log)</span>
                   </h3>
                   
-                  {filteredAttendanceForReport.length === 0 ? (
+                  {sortedAttendanceForReport.length === 0 ? (
                     <p className="text-[11px] text-slate-400 italic py-4 text-center border border-dashed border-slate-200 rounded">
                       Tidak ada log riwayat kehadiran untuk periode ini.
                     </p>
@@ -2149,7 +3149,7 @@ export default function AdminDashboard({
                         </tr>
                       </thead>
                       <tbody className="divide-y divide-slate-200">
-                        {filteredAttendanceForReport.map((rec, idx) => {
+                        {sortedAttendanceForReport.map((rec, idx) => {
                           const emp = employees.find(e => e.id === rec.employeeId);
                           let statusColor = 'bg-slate-50 text-slate-700 border-slate-200';
                           if (rec.status === 'Tepat Waktu') statusColor = 'bg-emerald-50 text-emerald-800 border-emerald-100';
@@ -2288,8 +3288,8 @@ export default function AdminDashboard({
 
             </div>
           </div>
-        );
-      })()}
+        )
+      }
 
       {/* Evidence Viewer Modal */}
       {selectedEvidenceUrl && (
@@ -2338,6 +3338,7 @@ export default function AdminDashboard({
         </div>
       )}
 
+      </div>
     </div>
   );
 }

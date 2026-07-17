@@ -1,6 +1,6 @@
 {
   "name": "Absensi Digital Sekolah",
-  "description": "Aplikasi absensi digital pegawai sekolah dengan verifikasi GPS radius 100 meter, sinkronisasi data pegawai dan riwayat otomatis ke Google Sheets, serta pengajuan cuti sakit, cuti tahunan, dan dinas luar.",
+  "description": "Aplikasi absensi digital pegawai sekolah dengan verifikasi GPS, sinkronisasi data pegawai dan riwayat otomatis ke Google Sheets, serta pengajuan cuti sakit, cuti tahunan, dan dinas luar.",
   "requestFramePermissions": ["geolocation", "camera"],
   "majorCapabilities": ["MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"]
 }

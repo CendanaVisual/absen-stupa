@@ -1,6 +1,24 @@
 import { initializeApp } from 'firebase/app';
 import { getAuth, signInWithPopup, GoogleAuthProvider, onAuthStateChanged, User, signOut } from 'firebase/auth';
-import firebaseConfig from '../../firebase-applet-config.json';
+import firebaseConfigDefault from '../../firebase-applet-config.json';
+
+// Support dynamic custom Firebase configuration from localStorage
+let firebaseConfig = { ...firebaseConfigDefault };
+try {
+  const customConfigStr = localStorage.getItem('sipeg_custom_firebase_config');
+  if (customConfigStr) {
+    const customConfig = JSON.parse(customConfigStr);
+    if (customConfig && (customConfig.projectId || customConfig.apiKey)) {
+      firebaseConfig = {
+        ...firebaseConfigDefault,
+        ...customConfig
+      };
+      console.log("Firebase initialized with custom configuration:", firebaseConfig.projectId);
+    }
+  }
+} catch (e) {
+  console.error("Error loading custom Firebase config:", e);
+}
 
 const app = initializeApp(firebaseConfig);
 export const auth = getAuth(app);

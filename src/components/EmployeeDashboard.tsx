@@ -4,6 +4,16 @@ import {
   RefreshCw, ChevronRight, User, HelpCircle, LogOut, Camera, Upload, Palette
 } from 'lucide-react';
 import { motion } from 'motion/react';
+import {
+  ResponsiveContainer,
+  BarChart,
+  Bar,
+  XAxis,
+  YAxis,
+  Tooltip,
+  CartesianGrid,
+  Cell
+} from 'recharts';
 import { Employee, AttendanceRecord, SchoolConfig } from '../types';
 import { saveAttendanceRecord, saveLeaveRequest, updateEmployeePhoto } from '../lib/sheets';
 
@@ -116,6 +126,7 @@ export default function EmployeeDashboard({
   const [photoInputUrl, setPhotoInputUrl] = useState('');
   const [photoSubmitting, setPhotoSubmitting] = useState(false);
   const [photoError, setPhotoError] = useState<string | null>(null);
+  const [isRefreshing, setIsRefreshing] = useState(false);
 
   // GPS States
   const [coords, setCoords] = useState<{ lat: number; lng: number } | null>(null);
@@ -740,11 +751,21 @@ export default function EmployeeDashboard({
 
   return (
     <motion.div 
-      className={`p-4 rounded-xl space-y-4 transition-colors duration-300 ${currentThemeData.bg}`}
+      className={`p-4 rounded-xl transition-colors duration-300 ${currentThemeData.bg} relative overflow-hidden`}
       initial={{ opacity: 0, y: 15 }}
       animate={{ opacity: 1, y: 0 }}
       transition={{ duration: 0.35, ease: 'easeOut' }}
     >
+      {/* Background Motif */}
+      <div 
+        className="absolute inset-0 pointer-events-none z-0 opacity-50 bg-repeat" 
+        style={{ 
+          backgroundImage: `url("${schoolConfig.backgroundUrl || 'https://images.unsplash.com/photo-1544816155-12df9643f363?auto=format&fit=crop&q=80&w=1200'} ")`,
+          backgroundSize: '240px'
+        }}
+      />
+
+      <div className="relative z-10 space-y-4">
       
       {/* TOOLBAR ATAS: TEMA & REFRESH */}
       <div className="flex items-center justify-between gap-4 border-b border-slate-200 pb-2">
@@ -769,8 +790,28 @@ export default function EmployeeDashboard({
           </select>
         </div>
         
-        <div className="text-[11px] text-slate-400 font-medium">
-          Portal Kehadiran: <strong className="font-bold text-slate-700">{currentThemeData.name}</strong>
+        <div className="flex items-center gap-2 text-[11px] text-slate-400 font-medium">
+          <span>Portal Kehadiran: <strong className="font-bold text-slate-700">{currentThemeData.name}</strong></span>
+          <span className="text-slate-300">|</span>
+          <button
+            onClick={async () => {
+              setIsRefreshing(true);
+              try {
+                await onRefreshData();
+              } catch (err) {
+                console.error(err);
+              } finally {
+                setIsRefreshing(false);
+              }
+            }}
+            disabled={isRefreshing}
+            className="flex items-center gap-1 px-2 py-0.5 bg-white hover:bg-slate-100 border border-slate-200 rounded text-[9px] text-slate-600 hover:text-blue-600 font-bold uppercase tracking-wider transition-all cursor-pointer shadow-xs active:scale-95 disabled:opacity-50"
+            id="btn-employee-toolbar-refresh"
+            title="Refresh Data dari Google Sheets"
+          >
+            <RefreshCw className={`w-2.5 h-2.5 text-slate-500 ${isRefreshing ? 'animate-spin' : ''}`} />
+            <span>{isRefreshing ? 'Memuat...' : 'Refresh'}</span>
+          </button>
         </div>
       </div>
 
@@ -1127,7 +1168,7 @@ export default function EmployeeDashboard({
                   <div className="flex flex-col items-center justify-center border border-dashed border-slate-300 rounded-lg py-5 bg-white space-y-2">
                     <Camera className="w-6 h-6 text-slate-400 animate-pulse" />
                     <p className="text-[10px] text-slate-500 font-semibold text-center px-4 leading-relaxed">
-                      Silakan aktifkan kamera depan HP atau unggah file foto selfie untuk memverifikasi kehadiran Anda.
+                      Silakan aktifkan kamera depan HP atau komputer untuk mengambil foto selfie guna memverifikasi kehadiran Anda.
                     </p>
                     <div className="flex gap-2 pt-1">
                       <button
@@ -1138,16 +1179,6 @@ export default function EmployeeDashboard({
                         <Camera className="w-3.5 h-3.5" />
                         Aktifkan Kamera
                       </button>
-                      <label className="px-2.5 py-1.5 bg-slate-100 hover:bg-slate-200 text-slate-700 border border-slate-300 text-[10px] font-bold uppercase tracking-wider rounded cursor-pointer flex items-center gap-1 shadow-xs">
-                        <Upload className="w-3.5 h-3.5" />
-                        Unggah Galeri
-                        <input
-                          type="file"
-                          accept="image/*"
-                          onChange={handlePhotoUploadChange}
-                          className="hidden"
-                        />
-                      </label>
                     </div>
                   </div>
                 )}
@@ -1218,6 +1249,228 @@ export default function EmployeeDashboard({
 
               <div className="text-[9px] text-slate-400 font-medium pl-1 leading-relaxed">
                 * Pastikan Anda berada dalam radius 100m dari sekolah. Setelah mengambil selfie, tombol akan menyala sesuai jadwal yang ditentukan.
+              </div>
+            </div>
+          </div>
+
+          {/* 7-DAY ATTENDANCE TREND CHART */}
+          <div className="bg-white rounded-xl border border-slate-200 p-4 shadow-sm space-y-4">
+            <div className="flex items-center justify-between border-b border-slate-100 pb-2">
+              <h3 className="text-xs font-bold text-slate-400 uppercase tracking-widest flex items-center gap-2">
+                <span className="w-2.5 h-2.5 rounded-full bg-emerald-500 animate-pulse" />
+                Tren Kehadiran & Disiplin (7 Hari Terakhir)
+              </h3>
+              <span className="text-[9px] font-bold text-slate-400 bg-slate-100 px-2 py-0.5 rounded uppercase font-mono">
+                Recharts Visualizer
+              </span>
+            </div>
+
+            {/* Chart Wrapper */}
+            <div className="h-48 w-full text-xs font-semibold">
+              <ResponsiveContainer width="100%" height="100%">
+                <BarChart
+                  data={(() => {
+                    const data = [];
+                    const dayNames = ['Min', 'Sen', 'Sel', 'Rab', 'Kam', 'Jum', 'Sab'];
+                    const monthNames = ['Jan', 'Feb', 'Mar', 'Apr', 'Mei', 'Jun', 'Jul', 'Agu', 'Sep', 'Okt', 'Nov', 'Des'];
+
+                    for (let i = 6; i >= 0; i--) {
+                      const d = new Date();
+                      d.setDate(d.getDate() - i);
+                      const dateStr = d.toISOString().split('T')[0]; // YYYY-MM-DD
+                      const dayLabel = `${dayNames[d.getDay()]} ${d.getDate()}`;
+
+                      const dayRecords = allPersonalHistory.filter(r => r.date === dateStr);
+                      const checkInRecord = dayRecords.find(r => r.type === 'Masuk');
+                      const leaveRecord = dayRecords.find(r => ['Sakit', 'Cuti', 'Dinas Luar'].includes(r.type));
+
+                      let score = 0;
+                      let statusLabel = 'Belum Absen';
+                      let fillTheme = '#e2e8f0'; // Neutral gray for absent/unrecorded
+
+                      if (checkInRecord) {
+                        if (checkInRecord.status === 'Tepat Waktu') {
+                          score = 100;
+                          statusLabel = 'Tepat Waktu';
+                          fillTheme = selectedTheme === 'emerald' ? '#10b981' :
+                                      selectedTheme === 'royal' ? '#8b5cf6' :
+                                      selectedTheme === 'amber' ? '#f59e0b' :
+                                      '#3b82f6';
+                        } else if (checkInRecord.status === 'Terlambat') {
+                          score = 65;
+                          const lateMin = checkInRecord.lateMinutes || 0;
+                          statusLabel = `Terlambat (${lateMin} m)`;
+                          fillTheme = '#ef4444'; // Red for late check-in
+                        } else if (checkInRecord.status === 'Dinas Luar') {
+                          score = 100;
+                          statusLabel = 'Dinas Luar';
+                          fillTheme = '#06b6d4'; // Cyan for business travel
+                        } else {
+                          score = 80;
+                          statusLabel = checkInRecord.status;
+                          fillTheme = '#64748b';
+                        }
+                      } else if (leaveRecord) {
+                        score = 50;
+                        statusLabel = `Izin (${leaveRecord.type})`;
+                        fillTheme = '#a855f7'; // Purple for leave requests
+                      } else {
+                        const dayOfWeek = d.getDay();
+                        const isWeekend = (dayOfWeek === 0 || dayOfWeek === 6) && schoolConfig.disableSatSun;
+                        const customHolidays = schoolConfig.holidays || [];
+                        const isHoliday = customHolidays.some(h => h.date === dateStr);
+
+                        if (isWeekend || isHoliday) {
+                          score = 10; // Subtle bar for weekend
+                          statusLabel = isHoliday ? 'Hari Libur' : 'Akhir Pekan';
+                          fillTheme = '#cbd5e1'; // Light gray
+                        } else {
+                          const hasApprovedLeave = leaveRequests?.some(req => 
+                            req.employeeId === activeEmployee?.id && 
+                            req.status === 'Disetujui' && 
+                            dateStr >= req.startDate && 
+                            dateStr <= req.endDate
+                          );
+                          if (hasApprovedLeave) {
+                            score = 50;
+                            statusLabel = 'Cuti Disetujui';
+                            fillTheme = '#a855f7';
+                          } else {
+                            score = 0;
+                            statusLabel = 'Alpa / Tanpa Keterangan';
+                            fillTheme = '#fda4af'; // Pinkish warning for undocumented absence
+                          }
+                        }
+                      }
+
+                      data.push({
+                        name: dayLabel,
+                        score,
+                        status: statusLabel,
+                        fillColor: fillTheme
+                      });
+                    }
+                    return data;
+                  })()}
+                  margin={{ top: 10, right: 5, left: -25, bottom: 5 }}
+                >
+                  <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="#f1f5f9" />
+                  <XAxis 
+                    dataKey="name" 
+                    tickLine={false} 
+                    axisLine={false} 
+                    tick={{ fill: '#64748b', fontSize: 10, fontWeight: 600 }} 
+                  />
+                  <YAxis 
+                    domain={[0, 100]} 
+                    tickLine={false} 
+                    axisLine={false} 
+                    ticks={[0, 50, 100]}
+                    tick={{ fill: '#94a3b8', fontSize: 9, fontWeight: 500 }} 
+                  />
+                  <Tooltip
+                    cursor={{ fill: '#f8fafc' }}
+                    content={({ active, payload }) => {
+                      if (active && payload && payload.length) {
+                        const data = payload[0].payload;
+                        return (
+                          <div className="bg-slate-900 text-white p-2.5 rounded-lg border border-slate-800 text-[11px] leading-relaxed shadow-lg font-sans">
+                            <p className="font-extrabold text-slate-200 mb-0.5">{data.name}</p>
+                            <p className="flex items-center gap-1.5">
+                              <span className="w-1.5 h-1.5 rounded-full" style={{ backgroundColor: data.fillColor }} />
+                              Status: <strong className="text-white font-bold">{data.status}</strong>
+                            </p>
+                            <p className="text-slate-400 text-[10px] mt-0.5">Skor Disiplin: {data.score} / 100</p>
+                          </div>
+                        );
+                      }
+                      return null;
+                    }}
+                  />
+                  <Bar dataKey="score" radius={[4, 4, 0, 0]} maxBarSize={32}>
+                    {/* Map colors dynamically to each bar */}
+                    {
+                      (() => {
+                        const colors = [];
+                        for (let i = 6; i >= 0; i--) {
+                          const d = new Date();
+                          d.setDate(d.getDate() - i);
+                          const dateStr = d.toISOString().split('T')[0];
+                          const dayRecords = allPersonalHistory.filter(r => r.date === dateStr);
+                          const checkInRecord = dayRecords.find(r => r.type === 'Masuk');
+                          const leaveRecord = dayRecords.find(r => ['Sakit', 'Cuti', 'Dinas Luar'].includes(r.type));
+
+                          let fillTheme = '#e2e8f0';
+                          if (checkInRecord) {
+                            if (checkInRecord.status === 'Tepat Waktu') {
+                              fillTheme = selectedTheme === 'emerald' ? '#10b981' :
+                                          selectedTheme === 'royal' ? '#8b5cf6' :
+                                          selectedTheme === 'amber' ? '#f59e0b' :
+                                          '#3b82f6';
+                            } else if (checkInRecord.status === 'Terlambat') {
+                              fillTheme = '#ef4444';
+                            } else if (checkInRecord.status === 'Dinas Luar') {
+                              fillTheme = '#06b6d4';
+                            } else {
+                              fillTheme = '#64748b';
+                            }
+                          } else if (leaveRecord) {
+                            fillTheme = '#a855f7';
+                          } else {
+                            const dayOfWeek = d.getDay();
+                            const isWeekend = (dayOfWeek === 0 || dayOfWeek === 6) && schoolConfig.disableSatSun;
+                            const customHolidays = schoolConfig.holidays || [];
+                            const isHoliday = customHolidays.some(h => h.date === dateStr);
+
+                            if (isWeekend || isHoliday) {
+                              fillTheme = '#cbd5e1';
+                            } else {
+                              const hasApprovedLeave = leaveRequests?.some(req => 
+                                req.employeeId === activeEmployee?.id && 
+                                req.status === 'Disetujui' && 
+                                dateStr >= req.startDate && 
+                                dateStr <= req.endDate
+                              );
+                              if (hasApprovedLeave) {
+                                fillTheme = '#a855f7';
+                              } else {
+                                fillTheme = '#fda4af';
+                              }
+                            }
+                          }
+                          colors.push(fillTheme);
+                        }
+                        return colors.map((col, idx) => (
+                          <Cell key={`cell-${idx}`} fill={col} />
+                        ));
+                      })()
+                    }
+                  </Bar>
+                </BarChart>
+              </ResponsiveContainer>
+            </div>
+
+            {/* Legend guide */}
+            <div className="flex flex-wrap items-center justify-center gap-x-4 gap-y-1.5 pt-1 text-[10px] font-bold text-slate-500 uppercase tracking-wider border-t border-slate-100">
+              <div className="flex items-center gap-1">
+                <span className="w-2.5 h-2.5 rounded" style={{ backgroundColor: selectedTheme === 'emerald' ? '#10b981' : selectedTheme === 'royal' ? '#8b5cf6' : selectedTheme === 'amber' ? '#f59e0b' : '#3b82f6' }} />
+                <span>Tepat Waktu</span>
+              </div>
+              <div className="flex items-center gap-1">
+                <span className="w-2.5 h-2.5 rounded bg-red-500" />
+                <span>Terlambat</span>
+              </div>
+              <div className="flex items-center gap-1">
+                <span className="w-2.5 h-2.5 rounded bg-purple-500" />
+                <span>Cuti/Izin</span>
+              </div>
+              <div className="flex items-center gap-1">
+                <span className="w-2.5 h-2.5 rounded bg-slate-300" />
+                <span>Akhir Pekan/Libur</span>
+              </div>
+              <div className="flex items-center gap-1">
+                <span className="w-2.5 h-2.5 rounded bg-rose-200" />
+                <span>Alpa</span>
               </div>
             </div>
           </div>
@@ -1531,6 +1784,7 @@ export default function EmployeeDashboard({
         </div>
       )}
 
+      </div>
     </motion.div>
   );
 }
