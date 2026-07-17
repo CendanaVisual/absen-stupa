@@ -1,4 +1,4 @@
-import { Employee, AttendanceRecord, UserAccount } from '../types';
+import { Employee, AttendanceRecord, UserAccount, SchoolConfig } from '../types';
 
 /**
  * Creates a brand new Spreadsheet in the user's Google Drive with Pegawai and Absensi sheets.
@@ -171,6 +171,7 @@ export async function ensureSheetsAndHeaders(
   if (!sheetTitles.includes('Absensi')) missingSheets.push('Absensi');
   if (!sheetTitles.includes('Pengajuan')) missingSheets.push('Pengajuan');
   if (!sheetTitles.includes('Akun Pegawai')) missingSheets.push('Akun Pegawai');
+  if (!sheetTitles.includes('Konfigurasi')) missingSheets.push('Konfigurasi');
 
   if (missingSheets.length > 0) {
     const batchUrl = `https://sheets.googleapis.com/v4/spreadsheets/${spreadsheetId}:batchUpdate`;
@@ -302,6 +303,37 @@ export async function ensureSheetsAndHeaders(
     await writeSheetValues(spreadsheetId, accessToken, 'Akun Pegawai!A1', headers);
     await appendSheetValues(spreadsheetId, accessToken, 'Akun Pegawai!A2', defaultAccounts);
   }
+
+  // 6. Check and initialize "Konfigurasi" sheet headers & default config
+  const configUrl = `https://sheets.googleapis.com/v4/spreadsheets/${spreadsheetId}/values/Konfigurasi!A1:B1`;
+  const configRes = await fetch(configUrl, {
+    headers: { 'Authorization': `Bearer ${accessToken}` },
+  });
+  const configData = await configRes.json();
+  const hasConfigHeaders = configData.values && configData.values.length > 0;
+
+  if (!hasConfigHeaders) {
+    const defaultSchoolConfig = [
+      ['name', 'SDN 7 Pedungan'],
+      ['address', 'Jl. Pedungan No. 63, Denpasar, Bali'],
+      ['latitude', '-8.70008'],
+      ['longitude', '115.21200'],
+      ['radius', '100'],
+      ['checkInStart', '06:00'],
+      ['checkInEnd', '08:00'],
+      ['checkOutStartMonThu', '13:00'],
+      ['checkOutEndMonThu', '15:00'],
+      ['checkOutStartFri', '11:00'],
+      ['checkOutEndFri', '13:00'],
+      ['disableSatSun', 'TRUE'],
+      ['latePenaltyPerMinute', '500'],
+      ['earlyPenaltyPerMinute', '500'],
+      ['holidays', '[]'],
+      ['logoUrl', ''],
+      ['backgroundUrl', '']
+    ];
+    await writeSheetValues(spreadsheetId, accessToken, 'Konfigurasi!A1:B17', defaultSchoolConfig);
+  }
 }
 
 /**
@@ -387,7 +419,7 @@ export async function loadEmployees(spreadsheetId: string, accessToken: string):
       name: String(row[1] || '').trim(),
       role: String(row[2] || '').trim(),
       email: String(row[3] || '').trim().toLowerCase(),
-      googleEmail: row[6] ? String(row[6]).trim().toLowerCase() : undefined, // Kolom G!
+      googleEmail: row[3] ? String(row[3]).trim().toLowerCase() : undefined, // Kolom D! (index 3)
       photoUrl: row[4] ? String(row[4]).trim() : undefined,
       baseSalary: row[5] ? Number(row[5]) : undefined,
       checkInStart: row[6] ? String(row[6]).trim() : undefined,
@@ -746,3 +778,108 @@ export async function updateEmployeePhoto(
   const range = `Pegawai!E${rowIndex}`;
   return await writeSheetValues(spreadsheetId, accessToken, range, [[photoUrl]]);
 }
+
+/**
+ * Loads the school configuration from the "Konfigurasi" tab.
+ */
+export async function loadSchoolConfig(
+  spreadsheetId: string,
+  accessToken: string
+): Promise<SchoolConfig | null> {
+  if (spreadsheetId === 'offline_spreadsheet' || accessToken === 'offline_token') {
+    const saved = localStorage.getItem('school_config');
+    if (saved) {
+      try {
+        return JSON.parse(saved);
+      } catch (e) {
+        return null;
+      }
+    }
+    return null;
+  }
+
+  try {
+    const url = `https://sheets.googleapis.com/v4/spreadsheets/${spreadsheetId}/values/Konfigurasi!A1:B30`;
+    const response = await fetch(url, {
+      headers: { 'Authorization': `Bearer ${accessToken}` },
+    });
+
+    if (!response.ok) {
+      return null;
+    }
+
+    const data = await response.json();
+    const rows = data.values || [];
+    if (rows.length === 0) return null;
+
+    const config: any = {};
+    rows.forEach((row: any[]) => {
+      if (row && row[0]) {
+        const key = String(row[0]).trim();
+        const value = row[1] !== undefined ? String(row[1]).trim() : '';
+        if (key === 'holidays') {
+          try {
+            config[key] = JSON.parse(value);
+          } catch (e) {
+            config[key] = [];
+          }
+        } else if (
+          key === 'latitude' ||
+          key === 'longitude' ||
+          key === 'radius' ||
+          key === 'latePenaltyPerMinute' ||
+          key === 'earlyPenaltyPerMinute'
+        ) {
+          config[key] = Number(value) || 0;
+        } else if (key === 'disableSatSun') {
+          config[key] = value.toUpperCase() === 'TRUE';
+        } else {
+          config[key] = value;
+        }
+      }
+    });
+
+    if (!config.name) return null;
+    return config as SchoolConfig;
+  } catch (err) {
+    console.warn('Gagal memuat konfigurasi dari sheet:', err);
+    return null;
+  }
+}
+
+/**
+ * Saves the school configuration to the "Konfigurasi" tab.
+ */
+export async function saveSchoolConfig(
+  spreadsheetId: string,
+  accessToken: string,
+  config: SchoolConfig
+): Promise<any> {
+  if (spreadsheetId === 'offline_spreadsheet' || accessToken === 'offline_token') {
+    localStorage.setItem('school_config', JSON.stringify(config));
+    return { success: true };
+  }
+
+  const values = [
+    ['name', config.name || ''],
+    ['address', config.address || ''],
+    ['latitude', String(config.latitude || 0)],
+    ['longitude', String(config.longitude || 0)],
+    ['radius', String(config.radius || 100)],
+    ['checkInStart', config.checkInStart || ''],
+    ['checkInEnd', config.checkInEnd || ''],
+    ['checkOutStartMonThu', config.checkOutStartMonThu || ''],
+    ['checkOutEndMonThu', config.checkOutEndMonThu || ''],
+    ['checkOutStartFri', config.checkOutStartFri || ''],
+    ['checkOutEndFri', config.checkOutEndFri || ''],
+    ['disableSatSun', config.disableSatSun ? 'TRUE' : 'FALSE'],
+    ['latePenaltyPerMinute', String(config.latePenaltyPerMinute || 0)],
+    ['earlyPenaltyPerMinute', String(config.earlyPenaltyPerMinute || 0)],
+    ['holidays', JSON.stringify(config.holidays || [])],
+    ['logoUrl', config.logoUrl || ''],
+    ['backgroundUrl', config.backgroundUrl || '']
+  ];
+
+  return await writeSheetValues(spreadsheetId, accessToken, 'Konfigurasi!A1:B17', values);
+}
+

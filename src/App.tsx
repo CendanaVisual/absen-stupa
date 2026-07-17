@@ -8,7 +8,7 @@ import {
 import { User } from 'firebase/auth';
 import firebaseConfigDefault from '../firebase-applet-config.json';
 import { initAuth, googleSignIn, logout, setAccessToken, auth } from './lib/firebase';
-import { loadEmployees, loadAttendance, ensureSheetsAndHeaders, loadLeaveRequests, loadUserAccounts } from './lib/sheets';
+import { loadEmployees, loadAttendance, ensureSheetsAndHeaders, loadLeaveRequests, loadUserAccounts, loadSchoolConfig, saveSchoolConfig } from './lib/sheets';
 import { Employee, AttendanceRecord, SchoolConfig, UserAccount } from './types';
 import SetupSpreadsheet from './components/SetupSpreadsheet';
 import EmployeeDashboard from './components/EmployeeDashboard';
@@ -116,14 +116,19 @@ export default function App() {
       // First make sure spreadsheets have correct tables & sample data
       await ensureSheetsAndHeaders(spreadsheetId, accessToken, 'sdn7pedungan63@gmail.com');
       
-      const [empList, attList, leaveList] = await Promise.all([
+      const [empList, attList, leaveList, loadedConfig] = await Promise.all([
         loadEmployees(spreadsheetId, accessToken),
         loadAttendance(spreadsheetId, accessToken),
-        loadLeaveRequests(spreadsheetId, accessToken)
+        loadLeaveRequests(spreadsheetId, accessToken),
+        loadSchoolConfig(spreadsheetId, accessToken)
       ]);
       setEmployees(empList);
       setAttendance(attList);
       setLeaveRequests(leaveList);
+      if (loadedConfig) {
+        setSchoolConfig(loadedConfig);
+        localStorage.setItem('school_config', JSON.stringify(loadedConfig));
+      }
     } catch (err: any) {
       console.warn(err);
       const isUnauthorized = String(err.message || '').includes('UNAUTHORIZED');
@@ -188,14 +193,13 @@ export default function App() {
 
         const isMasterAdmin = userEmail === 'sdn7pedungan63@gmail.com';
         const matchedEmp = empList.find(emp => {
-          const colG = (emp.googleEmail || emp.checkInStart || '').trim().toLowerCase();
           const colD = (emp.email || '').trim().toLowerCase();
-          return colG === userEmail || colD === userEmail;
+          return colD === userEmail;
         });
 
         if (!isMasterAdmin && !matchedEmp) {
           await logout();
-          throw new Error(`Gagal Menghubungkan: Akun Google Anda (${userEmail}) belum terdaftar pada sheet Pegawai Kolom G. Silakan hubungi operator sekolah untuk mendaftarkan email Google Anda.`);
+          throw new Error(`Gagal Menghubungkan: Akun Google Anda (${userEmail}) belum terdaftar pada sheet Pegawai Kolom D (Email). Silakan hubungi operator sekolah untuk mendaftarkan email Google Anda.`);
         }
 
         let loggedInAcc: UserAccount;
@@ -323,9 +327,16 @@ export default function App() {
     }
   };
 
-  const handleUpdateSchoolConfig = (newConfig: SchoolConfig) => {
+  const handleUpdateSchoolConfig = async (newConfig: SchoolConfig) => {
     setSchoolConfig(newConfig);
     localStorage.setItem('school_config', JSON.stringify(newConfig));
+    if (spreadsheetId && accessToken) {
+      try {
+        await saveSchoolConfig(spreadsheetId, accessToken, newConfig);
+      } catch (err) {
+        console.error("Gagal menyimpan konfigurasi sekolah ke Google Sheets:", err);
+      }
+    }
   };
 
   const handleUpdateSpreadsheetId = (id: string) => {
