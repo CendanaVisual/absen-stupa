@@ -57,6 +57,7 @@ export default function App() {
   const [usernameInput, setUsernameInput] = useState('');
   const [passwordInput, setPasswordInput] = useState('');
   const [showPassword, setShowPassword] = useState(false);
+  const [loginSelectedEmployeeId, setLoginSelectedEmployeeId] = useState('');
   const [loginError, setLoginError] = useState<string | null>(null);
   const [copiedDomain, setCopiedDomain] = useState<string | null>(null);
 
@@ -169,6 +170,64 @@ export default function App() {
       }
     }
   }, [employees, loggedInAccount]);
+
+  // Sync login dropdown selection to first 3 active employees
+  useEffect(() => {
+    if (employees.length > 0 && !loginSelectedEmployeeId) {
+      // Default to the first employee who is allowed to login (index 0)
+      setLoginSelectedEmployeeId(employees[0].id);
+    }
+  }, [employees, loginSelectedEmployeeId]);
+
+  const handleDropdownLoginSubmit = (e: React.FormEvent) => {
+    e.preventDefault();
+    setLoginError(null);
+
+    if (!loginSelectedEmployeeId) {
+      setLoginError('Silakan pilih nama pegawai terlebih dahulu.');
+      return;
+    }
+
+    const selectedEmpIndex = employees.findIndex(emp => emp.id === loginSelectedEmployeeId);
+    if (selectedEmpIndex === -1) {
+      setLoginError('Pegawai tidak ditemukan.');
+      return;
+    }
+
+    if (selectedEmpIndex >= 9) {
+      setLoginError('Akses Masuk Dibatasi: Pegawai pada Baris B11 ke bawah dinonaktifkan dari login.');
+      return;
+    }
+
+    const selectedEmp = employees[selectedEmpIndex];
+
+    // Check password
+    const enteredPassword = passwordInput.trim();
+    const correctPassword = (selectedEmp.sandi || '').trim();
+
+    if (enteredPassword !== correctPassword) {
+      setLoginError('Sandi / Password yang Anda masukkan salah. Silakan coba lagi.');
+      return;
+    }
+
+    // Login successful!
+    const isAdm = selectedEmp.role.toLowerCase().includes('kepala') || 
+                  selectedEmp.role.toLowerCase().includes('admin') || 
+                  selectedEmp.role.toLowerCase().includes('operator');
+    
+    const loggedInAcc = {
+      username: selectedEmp.email || '',
+      sandi: correctPassword,
+      nip: selectedEmp.id,
+      role: isAdm ? 'admin' : 'pegawai',
+      name: selectedEmp.name
+    };
+
+    setLoggedInAccount(loggedInAcc);
+    localStorage.setItem('sipeg_logged_in_account', JSON.stringify(loggedInAcc));
+    setNeedsAuth(false);
+    setPasswordInput('');
+  };
 
   const handleGoogleConnect = async () => {
     setIsLoggingIn(true);
@@ -311,16 +370,9 @@ export default function App() {
 
   const executeLogout = async () => {
     try {
-      await logout();
-      setUser(null);
-      setAccessTokenState(null);
       setLoggedInAccount(null);
-      localStorage.removeItem('sipeg_google_access_token');
       localStorage.removeItem('sipeg_logged_in_account');
       setNeedsAuth(true);
-      setEmployees([]);
-      setAttendance([]);
-      setLeaveRequests([]);
       setShowLogoutConfirm(false);
     } catch (err: any) {
       console.error(err);
@@ -468,6 +520,42 @@ export default function App() {
       );
     }
 
+    if (loginError.includes('belum terdaftar pada sheet Pegawai')) {
+      return (
+        <div className="p-4 bg-red-50 border border-red-200 text-red-900 rounded-xl text-[11px] leading-relaxed space-y-3 shadow-sm" id="employee-not-registered-card">
+          <div className="flex items-start gap-2 text-red-800">
+            <Info className="w-4.5 h-4.5 shrink-0 mt-0.5 text-red-600" />
+            <div>
+              <span className="font-bold block text-xs">Email Belum Terdaftar</span>
+              <p className="mt-1 text-[11px]">
+                {loginError}
+              </p>
+            </div>
+          </div>
+
+          <div className="space-y-1.5 text-slate-600 text-[10.5px] bg-white border border-red-100 p-3 rounded-lg">
+            <span className="font-bold text-[10px] text-red-700 uppercase tracking-wider block">
+              Cara Mendaftarkan Email Pegawai Baru:
+            </span>
+            <ol className="list-decimal list-inside pl-1 space-y-1.5 leading-relaxed">
+              <li>
+                Hubungkan kembali menggunakan Akun Google Admin Utama (<strong>sdn7pedungan63@gmail.com</strong>).
+              </li>
+              <li>
+                Masuk ke <strong>Dashboard Admin &gt; tab Pegawai</strong>, lalu tambahkan pegawai baru atau edit pegawai yang sudah ada. Masukkan email Google pegawai (misal: <em>iadnyana11@guru.sd.belajar.id</em>) ke dalam kolom <strong>Email</strong>.
+              </li>
+              <li>
+                Atau, Anda dapat membuka Google Spreadsheet langsung di Google Drive, lalu isi email pegawai tersebut pada <strong>Kolom D (Email)</strong> di baris pegawainya.
+              </li>
+              <li>
+                Setelah tersimpan di Google Sheets, pegawai tersebut dapat langsung masuk ke aplikasi menggunakan akun Google mereka sendiri.
+              </li>
+            </ol>
+          </div>
+        </div>
+      );
+    }
+
     return (
       <div className="p-3 bg-red-50 border border-red-200 text-red-700 rounded-lg text-[11px] font-semibold leading-relaxed flex items-start gap-2">
         <Info className="w-4 h-4 shrink-0 mt-0.5 text-red-600" />
@@ -479,76 +567,89 @@ export default function App() {
   // LOGIN PAGE (If not logged in)
   if (needsAuth) {
     return (
-      <div className="min-h-screen bg-slate-50 flex flex-col lg:flex-row">
+      <div className="min-h-screen bg-gradient-to-br from-slate-100 via-slate-50 to-indigo-50/30 flex flex-col lg:flex-row items-stretch">
         
-        {/* Left pane: Branding & Concept */}
-        <div className="lg:w-1/2 bg-gradient-to-br from-blue-600 to-indigo-800 text-white p-12 lg:p-24 flex flex-col justify-between">
-          <div className="flex items-center gap-3">
-            <div className="w-8 h-8 bg-white/10 rounded flex items-center justify-center border border-white/20">
-              <GraduationCap className="w-5 h-5 text-white" />
+        {/* Left pane: Branding & Concept - Luxury Upgraded Gradient */}
+        <div className="lg:w-1/2 bg-gradient-to-br from-indigo-950 via-slate-900 to-blue-950 text-white p-12 lg:p-24 flex flex-col justify-between relative overflow-hidden">
+          {/* Subtle decorative glow */}
+          <div className="absolute -top-40 -left-40 w-96 h-96 rounded-full bg-blue-500/10 blur-3xl pointer-events-none"></div>
+          <div className="absolute -bottom-40 -right-40 w-96 h-96 rounded-full bg-indigo-500/10 blur-3xl pointer-events-none"></div>
+
+          <div className="flex items-center gap-3 relative z-10">
+            <div className="w-10 h-10 bg-white/5 rounded-xl flex items-center justify-center border border-white/10 shadow-lg shadow-black/10">
+              <GraduationCap className="w-6 h-6 text-indigo-300" />
             </div>
-            <span className="font-bold text-sm tracking-wider uppercase">SISTEM ABSENSI PEGAWAI</span>
+            <div>
+              <span className="font-black text-sm tracking-widest uppercase bg-gradient-to-r from-white to-slate-300 bg-clip-text text-transparent block">Sistem Absensi Pegawai</span>
+              <span className="text-[10px] font-bold tracking-widest text-indigo-300/80 uppercase block">SDN 7 PEDUNGAN</span>
+            </div>
           </div>
 
-          <div className="my-12 lg:my-0 space-y-6">
-            <h1 className="text-3xl lg:text-4xl font-black leading-tight tracking-tight">
-              Sistem Absensi Digital Pegawai Sekolah
-            </h1>
-            <p className="text-blue-100 text-xs max-w-md leading-relaxed">
-              Solusi kehadiran pegawai sekolah yang modern dengan verifikasi GPS dan integrasi langsung ke Google Sheets secara transparan dan aman.
-            </p>
+          <div className="my-16 lg:my-0 space-y-8 relative z-10">
+            <div className="space-y-4">
+              <span className="inline-flex items-center gap-1.5 px-3 py-1 bg-indigo-500/10 border border-indigo-400/20 rounded-full text-[10px] font-bold uppercase tracking-wider text-indigo-300">
+                ⭐ Portal Presensi Premium v2.0
+              </span>
+              <h1 className="text-3xl lg:text-5xl font-extrabold leading-tight tracking-tight text-white">
+                Kehadiran Lebih <span className="bg-gradient-to-r from-blue-400 via-indigo-300 to-indigo-200 bg-clip-text text-transparent">Akurat & Terintegrasi</span>
+              </h1>
+              <p className="text-slate-300 text-xs max-w-md leading-relaxed">
+                Platform absensi digital resmi SDN 7 Pedungan yang memudahkan pencatatan kehadiran harian secara real-time langsung ke Google Sheets.
+              </p>
+            </div>
 
-            <div className="pt-4 space-y-3">
+            <div className="pt-6 space-y-4 border-t border-white/5">
               {[
-                { title: 'Kunci GPS', desc: 'Mencegah manipulasi lokasi, pegawai wajib berada di sekitar area sekolah.' },
-                { title: 'Google Sheets Sinkron', desc: 'Semua rekap kehadiran tersimpan otomatis dan permanen di Google Drive Anda.' },
-                { title: 'Pengajuan Izin Mandiri', desc: 'Sakit, Cuti, dan Dinas Luar terintegrasi otomatis ke dalam riwayat absensi.' }
+                { title: 'Presisi GPS & Radar', desc: 'Verifikasi jangkauan radius otomatis dengan akurasi perangkat tinggi.' },
+                { title: 'Google Sheets Real-time', desc: 'Penyimpanan terpusat di cloud yang aman dan transparan tanpa server perantara.' },
+                { title: 'Sandi Pribadi Terenkripsi', desc: 'Login mandiri menggunakan dropdown nama resmi dan sandi Anda masing-masing.' }
               ].map((feat, i) => (
-                <div key={i} className="flex gap-3">
-                  <div className="w-5 h-5 rounded bg-blue-500/20 text-blue-300 flex items-center justify-center shrink-0 mt-0.5 font-bold text-xs">✓</div>
+                <div key={i} className="flex gap-4">
+                  <div className="w-6 h-6 rounded-lg bg-indigo-500/15 border border-indigo-400/25 text-indigo-300 flex items-center justify-center shrink-0 mt-0.5 font-bold text-xs">✓</div>
                   <div>
-                    <h4 className="font-bold text-xs text-white">{feat.title}</h4>
-                    <p className="text-[11px] text-blue-200/80 mt-0.5">{feat.desc}</p>
+                    <h4 className="font-extrabold text-xs text-slate-100">{feat.title}</h4>
+                    <p className="text-[11px] text-slate-400 mt-1 leading-relaxed">{feat.desc}</p>
                   </div>
                 </div>
               ))}
             </div>
           </div>
 
-          <p className="text-[10px] text-blue-200/60 uppercase tracking-wider font-semibold">
-            © 2026 Cendana Visual. Hak Cipta Dilindungi.
+          <p className="text-[10px] text-slate-500 uppercase tracking-widest font-bold relative z-10">
+            Copyright 2026 Cendana Visual.Dilindungi Oleh Undang-Undang.
           </p>
         </div>
 
-        {/* Right pane: Action */}
-        <div className="lg:w-1/2 p-8 lg:p-24 flex flex-col justify-center bg-white items-center">
-          <div className="max-w-sm w-full space-y-8">
+        {/* Right pane: Action with Luxury styling */}
+        <div className="lg:w-1/2 p-8 lg:p-24 flex flex-col justify-center items-center bg-gradient-to-tr from-slate-50 via-white to-indigo-50/20 relative">
+          <div className="max-w-md w-full space-y-8 bg-white p-8 lg:p-10 rounded-2xl border border-slate-200/50 shadow-xl shadow-slate-200/40 relative z-10">
             <div>
-              <h2 className="text-2xl font-black text-slate-800 tracking-tight uppercase">Login Pegawai</h2>
+              <h2 className="text-2xl font-black text-slate-800 tracking-tight uppercase">Portal Presensi</h2>
               <p className="text-xs text-slate-500 mt-2 leading-relaxed">
-                Masuk ke dalam aplikasi secara instan dan aman menggunakan Akun Google Anda yang telah terdaftar di database sekolah.
+                Silakan pilih nama Anda pada daftar dropdown dan masukkan sandi Anda untuk mengakses sistem presensi digital.
               </p>
             </div>
 
+            {renderLoginError()}
+
             {!accessToken ? (
+              // Google connection is required to sync sheets with employees database
               <div className="space-y-4 w-full">
-                <div className="p-4 bg-blue-50 border border-blue-100 rounded-xl space-y-2 text-slate-600">
-                  <span className="font-bold text-xs text-blue-800 uppercase tracking-wider flex items-center gap-1.5">
-                    <Lock className="w-4 h-4 text-blue-600" />
-                    Otorisasi Google Diperlukan
+                <div className="p-4 bg-amber-50/80 border border-amber-200/40 rounded-xl space-y-2 text-amber-950">
+                  <span className="font-bold text-xs text-amber-800 uppercase tracking-wider flex items-center gap-1.5">
+                    <Lock className="w-4 h-4 text-amber-600" />
+                    Otorisasi Google Sheets Sekolah
                   </span>
-                  <p className="text-[11px] leading-relaxed">
-                    Sistem Absensi SDN 7 Pedungan terintegrasi langsung dengan database Google Sheets. Silakan hubungkan akun Google Anda terlebih dahulu untuk mengotorisasi akses baca-tulis spreadsheet secara aman.
+                  <p className="text-[11px] leading-relaxed text-amber-900/80">
+                    Sistem Presensi memerlukan otorisasi akun Google Sekolah untuk mengakses database spreadsheet. Silakan hubungkan akun Google sekolah Anda untuk melanjutkan.
                   </p>
                 </div>
 
-                {renderLoginError()}
-                
                 <button
                   type="button"
                   onClick={handleGoogleConnect}
                   disabled={isLoggingIn}
-                  className="w-full flex items-center justify-center gap-2 px-4 py-2.5 bg-blue-600 hover:bg-blue-700 text-white rounded-lg text-xs font-bold transition-all disabled:opacity-50 cursor-pointer shadow-sm active:scale-[0.98]"
+                  className="w-full flex items-center justify-center gap-2 px-4 py-3 bg-indigo-600 hover:bg-indigo-700 text-white rounded-xl text-xs font-bold transition-all disabled:opacity-50 cursor-pointer shadow-md active:scale-[0.98]"
                   id="btn-connect-google"
                 >
                   {isLoggingIn ? (
@@ -559,124 +660,110 @@ export default function App() {
                   ) : (
                     <>
                       <Compass className="w-4 h-4" />
-                      <span>Hubungkan Akun Google</span>
+                      <span>Hubungkan Akun Google Sekolah</span>
                     </>
                   )}
                 </button>
+              </div>
+            ) : (
+              // Show Dropdown + Password login
+              <form onSubmit={handleDropdownLoginSubmit} className="space-y-5 w-full">
+                <div>
+                  <label className="block text-[10px] font-bold text-slate-500 uppercase tracking-wider mb-2 pl-1">
+                    Pilih Nama Pegawai
+                  </label>
+                  {dataLoading ? (
+                    <div className="flex items-center gap-2 text-xs text-slate-500 py-2.5 pl-1 bg-slate-50 border border-slate-100 rounded-lg">
+                      <Loader2 className="w-4 h-4 animate-spin text-indigo-600 ml-2" />
+                      <span>Memuat daftar pegawai dari cloud...</span>
+                    </div>
+                  ) : (
+                    <select
+                      value={loginSelectedEmployeeId}
+                      onChange={(e) => setLoginSelectedEmployeeId(e.target.value)}
+                      className="w-full px-3.5 py-2.5 bg-slate-50 hover:bg-slate-100/70 border border-slate-200 rounded-xl text-xs focus:outline-none focus:border-indigo-500 focus:bg-white text-slate-700 font-bold cursor-pointer transition-colors"
+                      id="select-login-employee"
+                    >
+                      <option value="">-- Pilih Nama Pegawai --</option>
+                      {employees.map((emp, index) => {
+                        const isDisabled = index >= 9;
+                        return (
+                          <option key={`${emp.id}-${index}`} value={emp.id} disabled={isDisabled} className={isDisabled ? "text-slate-400 font-normal" : "text-slate-800 font-bold"}>
+                            {emp.name} ({emp.role}){isDisabled ? ' - [Akses Dinonaktifkan (Baris B11+)]' : ''}
+                          </option>
+                        );
+                      })}
+                    </select>
+                  )}
+                </div>
 
-                <div className="relative flex py-1 items-center">
-                  <div className="flex-grow border-t border-slate-200"></div>
-                  <span className="flex-shrink mx-4 text-slate-400 text-[9px] font-bold uppercase tracking-wider">Atau</span>
-                  <div className="flex-grow border-t border-slate-200"></div>
+                <div>
+                  <div className="flex justify-between items-center mb-2 pl-1">
+                    <label className="block text-[10px] font-bold text-slate-500 uppercase tracking-wider">
+                      Sandi / Password Pegawai
+                    </label>
+                  </div>
+                  <div className="relative">
+                    <input
+                      type={showPassword ? "text" : "password"}
+                      placeholder="Masukkan kata sandi pribadi Anda"
+                      value={passwordInput}
+                      onChange={(e) => setPasswordInput(e.target.value)}
+                      className="w-full pl-3.5 pr-12 py-2.5 bg-slate-50 border border-slate-200 rounded-xl text-xs focus:outline-none focus:border-indigo-500 focus:bg-white text-slate-800 font-bold transition-colors tracking-wide"
+                      id="input-login-password"
+                      required
+                    />
+                    <button
+                      type="button"
+                      onClick={() => setShowPassword(!showPassword)}
+                      className="absolute right-3.5 top-1/2 -translate-y-1/2 text-slate-400 hover:text-indigo-600 focus:outline-none text-[10px] font-bold transition-colors"
+                    >
+                      {showPassword ? "Sembunyikan" : "Tampilkan"}
+                    </button>
+                  </div>
                 </div>
 
                 <button
-                  type="button"
-                  onClick={handleEnableOfflineMode}
-                  className="w-full flex items-center justify-center gap-2 px-4 py-2.5 bg-slate-100 hover:bg-slate-200 text-slate-700 border border-slate-300 rounded-lg text-xs font-bold transition-all cursor-pointer shadow-sm active:scale-[0.98]"
-                  id="btn-enable-offline"
+                  type="submit"
+                  disabled={dataLoading || employees.length === 0}
+                  className="w-full py-3 bg-gradient-to-r from-indigo-600 to-blue-600 hover:from-indigo-700 hover:to-blue-700 text-white rounded-xl text-xs font-bold transition-all shadow-md active:scale-[0.98] uppercase tracking-widest font-mono"
+                  id="btn-login-submit"
                 >
-                  <FileSpreadsheet className="w-4 h-4 text-slate-600" />
-                  <span>Gunakan Mode Tanpa Google (Lokal)</span>
+                  Masuk ke Portal Presensi
                 </button>
-              </div>
-            ) : (
-              <div className="space-y-4 w-full">
-                {accessToken === 'offline_token' && (
-                  <div className="p-3.5 bg-emerald-50 border border-emerald-100 rounded-xl space-y-1.5 text-slate-600" id="offline-mode-indicator-card">
-                    <span className="font-bold text-[11px] text-emerald-800 uppercase tracking-wider flex items-center gap-1.5">
-                      <span className="w-2.5 h-2.5 rounded-full bg-emerald-500 animate-pulse"></span>
-                      Mode Tanpa Google Aktif
-                    </span>
-                    <p className="text-[11px] leading-relaxed text-slate-600">
-                      Silakan pilih akun di bawah ini untuk masuk ke portal:
-                    </p>
+
+                <div className="pt-3 border-t border-slate-100 flex items-center justify-between text-[10px]">
+                  <div className="flex items-center gap-1.5 text-emerald-600 font-bold">
+                    <span className="w-1.5 h-1.5 rounded-full bg-emerald-500 animate-pulse"></span>
+                    Google Terkoneksi
                   </div>
-                )}
-
-                {accessToken === 'offline_token' ? (
-                  <div className="space-y-2 max-h-[300px] overflow-y-auto pr-1">
-                    {[
-                      { username: "ketut", sandi: "", nip: "196512311988031001", role: "admin", name: "Drs. Ketut Pedungan", desc: "Kepala Sekolah (Admin)" },
-                      { username: "budi", sandi: "", nip: "199001012020121001", role: "pegawai", name: "Budi Santoso, S.Pd.", desc: "Guru Kelas IV (Pegawai)" },
-                      { username: "dewi", sandi: "", nip: "198505122015042002", role: "pegawai", name: "Dewi Lestari, M.Pd.", desc: "Guru Matematika (Pegawai)" },
-                      { username: "wayan", sandi: "", nip: "197808202008011003", role: "pegawai", name: "I Wayan Sudiarta", desc: "Staf Tata Usaha (Pegawai)" }
-                    ].map((acc, i) => (
-                      <button
-                        key={i}
-                        type="button"
-                        onClick={() => handleSelectOfflineAccount(acc)}
-                        className="w-full text-left p-3 bg-white hover:bg-slate-50 border border-slate-200 rounded-xl transition-all cursor-pointer hover:border-blue-300 hover:shadow-sm flex items-center justify-between"
-                      >
-                        <div>
-                          <p className="font-bold text-xs text-slate-800">{acc.name}</p>
-                          <p className="text-[10px] text-slate-500 mt-0.5">{acc.desc}</p>
-                        </div>
-                        <span className="text-[9px] bg-slate-100 px-2 py-0.5 rounded font-bold uppercase text-slate-600">
-                          {acc.role}
-                        </span>
-                      </button>
-                    ))}
-
-                    <button
-                      type="button"
-                      onClick={() => {
+                  <button
+                    type="button"
+                    onClick={async () => {
+                      if (confirm('Apakah Anda yakin ingin memutuskan koneksi Google Sheets Sekolah? Tindakan ini memerlukan otorisasi ulang oleh Admin.')) {
+                        await logout();
                         setAccessTokenState(null);
                         setSpreadsheetId(null);
                         localStorage.removeItem('sipeg_google_access_token');
                         localStorage.removeItem('absensi_spreadsheet_id');
-                      }}
-                      className="text-xs text-blue-600 hover:text-blue-800 font-bold underline cursor-pointer block text-center w-full pt-2"
-                    >
-                      Hubungkan Kembali ke Google
-                    </button>
-                  </div>
-                ) : (
-                  <div className="space-y-4">
-                    <div className="p-3 bg-blue-50 border border-blue-100 rounded-xl flex items-center justify-between text-xs text-blue-800 shadow-sm" id="google-connected-badge">
-                      <div className="flex items-center gap-2 overflow-hidden">
-                        <div className="w-2 h-2 rounded-full bg-emerald-500 animate-pulse shrink-0"></div>
-                        <div className="overflow-hidden">
-                          <p className="font-extrabold text-[10px] uppercase tracking-wide text-blue-900">Google Terhubung</p>
-                          <p className="text-[10px] text-slate-500 truncate max-w-[200px]" title={auth.currentUser?.email || user?.email || ''}>
-                            {auth.currentUser?.email || user?.email || 'Akun Google Aktif'}
-                          </p>
-                        </div>
-                      </div>
-                      <button
-                        type="button"
-                        onClick={async () => {
-                          await logout();
-                          setAccessTokenState(null);
-                          setSpreadsheetId(null);
-                          localStorage.removeItem('sipeg_google_access_token');
-                          localStorage.removeItem('absensi_spreadsheet_id');
-                        }}
-                        className="px-2 py-1 text-[10px] bg-white hover:bg-red-50 text-red-600 hover:text-red-700 font-bold rounded-lg transition-colors border border-red-200 cursor-pointer shrink-0 active:scale-95"
-                        id="btn-disconnect-google-form"
-                      >
-                        Putuskan
-                      </button>
-                    </div>
-
-                    <div className="p-4 bg-amber-50 border border-amber-100 rounded-xl text-xs text-amber-950 space-y-1">
-                      <p className="font-bold">Menghubungkan Akun Pegawai...</p>
-                      <p className="text-[11px] leading-relaxed text-slate-600">
-                        Sistem sedang memverifikasi email Google Anda dan mencocokkannya dengan database pegawai. Mohon tunggu sejenak.
-                      </p>
-                    </div>
-                  </div>
-                )}
-              </div>
+                      }
+                    }}
+                    className="text-red-500 hover:text-red-700 font-bold transition-colors cursor-pointer hover:underline"
+                    id="btn-disconnect-google-school"
+                  >
+                    Putuskan Koneksi Google Sheets
+                  </button>
+                </div>
+              </form>
             )}
 
-            <div className="p-4 bg-blue-50/70 rounded-xl border border-blue-100 flex flex-col gap-1.5 text-[11px] leading-relaxed text-slate-500">
+            <div className="p-4 bg-slate-50 rounded-xl border border-slate-100 flex flex-col gap-1 text-[11px] leading-relaxed text-slate-500">
               <span className="font-bold text-slate-700 flex items-center gap-1.5 uppercase tracking-wide">
-                <Info className="w-3.5 h-3.5 text-blue-600" />
-                💡 Petunjuk Akses:
+                <Info className="w-3.5 h-3.5 text-indigo-600" />
+                💡 Petunjuk Akses Pegawai:
               </span>
               <p>
-                Sistem absensi ini tidak lagi membutuhkan username & password. Pegawai cukup menekan tombol <strong>Hubungkan Akun Google</strong> menggunakan email yang telah didaftarkan operator sekolah di sheet Pegawai Kolom G.
+                Pilih nama Anda pada daftar dropdown, kemudian masukkan kata sandi Anda yang telah terdaftar di database Pegawai. Jika Anda belum memiliki sandi atau lupa, silakan hubungi Admin/Operator Absen.
               </p>
             </div>
           </div>
@@ -722,7 +809,7 @@ export default function App() {
 
   // MAIN PORTAL APPLICATION
   return (
-    <div className="min-h-screen bg-slate-50 pb-16">
+    <div className="min-h-screen bg-gradient-to-br from-slate-100 via-slate-50 to-indigo-50/40 pb-16 relative">
       
       {/* Top Application Header */}
       <header className="bg-white border-b border-slate-200 sticky top-0 z-40">

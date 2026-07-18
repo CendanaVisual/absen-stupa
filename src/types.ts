@@ -12,6 +12,7 @@ export interface Employee {
   checkOutEndMonThu?: string;   // Override HH:MM
   checkOutStartFri?: string;    // Override HH:MM
   checkOutEndFri?: string;      // Override HH:MM
+  sandi?: string;
 }
 
 export interface AttendanceRecord {

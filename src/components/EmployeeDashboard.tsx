@@ -133,6 +133,7 @@ export default function EmployeeDashboard({
   const [distance, setDistance] = useState<number | null>(null);
   const [gpsError, setGpsError] = useState<string | null>(null);
   const [gpsLoading, setGpsLoading] = useState(false);
+  const [gpsAccuracy, setGpsAccuracy] = useState<number | null>(null);
 
   // Clock in/out states
   const [notes, setNotes] = useState('');
@@ -409,10 +410,12 @@ export default function EmployeeDashboard({
       return;
     }
 
+    // Menggunakan opsi high accuracy, timeout lebih lama, dan mematikan cache (maximumAge: 0) agar lokasi real-time paling akurat didapatkan
     navigator.geolocation.getCurrentPosition(
       (position) => {
-        const { latitude, longitude } = position.coords;
+        const { latitude, longitude, accuracy } = position.coords;
         setCoords({ lat: latitude, lng: longitude });
+        setGpsAccuracy(accuracy);
         
         // Calculate distance in meters using Haversine
         const dist = getDistanceInMeters(
@@ -426,14 +429,16 @@ export default function EmployeeDashboard({
       },
       (error) => {
         console.error(error);
-        let errorMsg = 'Gagal mengakses GPS. Pastikan izin lokasi diaktifkan.';
+        let errorMsg = 'Gagal mengakses GPS. Pastikan izin lokasi aktif dan sinyal Anda bagus.';
         if (error.code === error.PERMISSION_DENIED) {
           errorMsg = 'Izin akses lokasi GPS ditolak. Silakan aktifkan izin lokasi di browser Anda.';
+        } else if (error.code === error.TIMEOUT) {
+          errorMsg = 'Waktu pencarian lokasi habis (GPS Timeout). Silakan klik "Segarkan GPS" untuk mencoba lagi.';
         }
         setGpsError(errorMsg);
         setGpsLoading(false);
       },
-      { enableHighAccuracy: true, timeout: 10000 }
+      { enableHighAccuracy: true, timeout: 15000, maximumAge: 0 }
     );
   };
 
@@ -751,17 +756,22 @@ export default function EmployeeDashboard({
 
   return (
     <motion.div 
-      className={`p-4 rounded-xl transition-colors duration-300 ${currentThemeData.bg} relative overflow-hidden`}
+      className={`p-4 md:p-8 rounded-2xl border border-slate-200/60 transition-colors duration-300 ${currentThemeData.bg || 'bg-gradient-to-br from-slate-50 via-white to-slate-50'} relative overflow-hidden shadow-sm`}
       initial={{ opacity: 0, y: 15 }}
       animate={{ opacity: 1, y: 0 }}
       transition={{ duration: 0.35, ease: 'easeOut' }}
     >
-      {/* Background Motif */}
+      {/* Subtle luxury light glow effects */}
+      <div className="absolute -top-40 -left-40 w-96 h-96 rounded-full bg-indigo-500/5 blur-3xl pointer-events-none"></div>
+      <div className="absolute -bottom-40 -right-40 w-96 h-96 rounded-full bg-blue-500/5 blur-3xl pointer-events-none"></div>
+
+
+
+      {/* Premium Luxury Background Image with Soft Tint & Cover scale */}
       <div 
-        className="absolute inset-0 pointer-events-none z-0 opacity-50 bg-repeat" 
+        className="absolute inset-0 pointer-events-none z-0 opacity-[0.12] bg-cover bg-center transition-all duration-500" 
         style={{ 
-          backgroundImage: `url("${schoolConfig.backgroundUrl || 'https://images.unsplash.com/photo-1544816155-12df9643f363?auto=format&fit=crop&q=80&w=1200'} ")`,
-          backgroundSize: '240px'
+          backgroundImage: `url("${schoolConfig.backgroundUrl || 'https://images.unsplash.com/photo-1544816155-12df9643f363?auto=format&fit=crop&q=80&w=1200'}")`
         }}
       />
 
@@ -1023,7 +1033,7 @@ export default function EmployeeDashboard({
               </div>
 
               {/* Status Badge & Actions */}
-              <div className="mt-3 space-y-2 z-10">
+              <div className="mt-3 space-y-2.5 z-10 w-full px-4">
                 {distance !== null && !gpsError ? (
                   isWithinRadius ? (
                     <div className="inline-flex items-center gap-1.5 px-2.5 py-0.5 bg-blue-100 text-blue-800 border border-blue-200 rounded-full text-[10px] font-bold uppercase tracking-wider">
@@ -1037,12 +1047,45 @@ export default function EmployeeDashboard({
                     </div>
                   )
                 ) : gpsError ? (
-                  <div className="p-2 bg-amber-50 text-amber-800 border border-amber-200 rounded text-[10px] font-bold max-w-sm">
+                  <div className="p-2 bg-amber-50 text-amber-800 border border-amber-200 rounded text-[10px] font-bold max-w-sm mx-auto">
                     {gpsError}
                   </div>
                 ) : (
                   <span className="text-[10px] font-bold text-slate-400 uppercase tracking-widest">Mendeteksi lokasi Anda...</span>
                 )}
+
+                {coords && (
+                  <div className="text-[10px] text-slate-500 font-mono space-y-1 bg-slate-100/60 p-2 rounded border border-slate-200/50 max-w-xs mx-auto">
+                    <p className="font-semibold text-slate-700">📌 Koordinat Anda:</p>
+                    <p className="bg-white/80 py-0.5 rounded border border-slate-100">{coords.lat.toFixed(6)}, {coords.lng.toFixed(6)}</p>
+                    {gpsAccuracy !== null && (
+                      <div className="pt-1 border-t border-slate-200/50">
+                        <p className="font-semibold text-slate-600">
+                          Akurasi GPS: <span className="font-bold">±{gpsAccuracy.toFixed(1)}m</span>
+                        </p>
+                        <p className="text-[9px] mt-0.5">
+                          {gpsAccuracy <= 15 ? (
+                            <span className="text-emerald-600 font-bold">🟢 Sangat Akurat (Rekomendasi)</span>
+                          ) : gpsAccuracy <= 30 ? (
+                            <span className="text-amber-600 font-semibold">🟡 Cukup Akurat (Awan/Ruangan)</span>
+                          ) : (
+                            <span className="text-rose-600 font-semibold">🔴 Kurang Akurat (Mencari Sinyal...)</span>
+                          )}
+                        </p>
+                      </div>
+                    )}
+                  </div>
+                )}
+
+                <button
+                  type="button"
+                  onClick={fetchLocation}
+                  disabled={gpsLoading}
+                  className="mt-1 flex items-center justify-center gap-1 px-3 py-1 bg-white hover:bg-slate-100 active:bg-slate-200 border border-slate-200 rounded shadow-sm text-[10px] font-bold text-slate-700 transition-colors cursor-pointer mx-auto"
+                >
+                  <RefreshCw className={`w-3 h-3 text-slate-500 ${gpsLoading ? 'animate-spin' : ''}`} />
+                  Segarkan GPS (Akurasi Tinggi)
+                </button>
               </div>
             </div>
 

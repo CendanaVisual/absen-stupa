@@ -216,13 +216,14 @@ export async function ensureSheetsAndHeaders(
       "Jam Pulang Mulai (Sen-Kam)", 
       "Jam Pulang Selesai (Sen-Kam)", 
       "Jam Pulang Mulai (Jumat)", 
-      "Jam Pulang Selesai (Jumat)"
+      "Jam Pulang Selesai (Jumat)",
+      "Sandi / Password"
     ]];
     const defaultRows = [
-      ["199001012020121001", "Budi Santoso, S.Pd.", "Guru Kelas IV", userEmail || "budi@sekolah.sch.id", "", "4500000", "", "", "", "", "", ""],
-      ["198505122015042002", "Dewi Lestari, M.Pd.", "Guru Matematika", "dewi@sekolah.sch.id", "", "4800000", "", "", "", "", "", ""],
-      ["197808202008011003", "I Wayan Sudiarta", "Staf Tata Usaha", "wayan@sekolah.sch.id", "", "3500000", "", "", "", "", "", ""],
-      ["196512311988031001", "Drs. Ketut Pedungan", "Kepala Sekolah", "ketut@sekolah.sch.id", "", "6000000", "", "", "", "", "", ""]
+      ["199001012020121001", "Budi Santoso, S.Pd.", "Guru Kelas IV", userEmail || "budi@sekolah.sch.id", "", "4500000", "", "", "", "", "", "", "budi123"],
+      ["198505122015042002", "Dewi Lestari, M.Pd.", "Guru Matematika", "dewi@sekolah.sch.id", "", "4800000", "", "", "", "", "", "", "dewi123"],
+      ["197808202008011003", "I Wayan Sudiarta", "Staf Tata Usaha", "wayan@sekolah.sch.id", "", "3500000", "", "", "", "", "", "", "wayan123"],
+      ["196512311988031001", "Drs. Ketut Pedungan", "Kepala Sekolah", "ketut@sekolah.sch.id", "", "6000000", "", "", "", "", "", "", "ketut123"]
     ];
     await writeSheetValues(spreadsheetId, accessToken, 'Pegawai!A1', headers);
     await appendSheetValues(spreadsheetId, accessToken, 'Pegawai!A2', defaultRows);
@@ -397,7 +398,7 @@ export async function loadEmployees(spreadsheetId: string, accessToken: string):
     return defaultEmployees;
   }
 
-  const url = `https://sheets.googleapis.com/v4/spreadsheets/${spreadsheetId}/values/Pegawai!A2:L500`;
+  const url = `https://sheets.googleapis.com/v4/spreadsheets/${spreadsheetId}/values/Pegawai!A2:M500`;
   const response = await fetch(url, {
     headers: { 'Authorization': `Bearer ${accessToken}` },
   });
@@ -428,6 +429,7 @@ export async function loadEmployees(spreadsheetId: string, accessToken: string):
       checkOutEndMonThu: row[9] ? String(row[9]).trim() : undefined,
       checkOutStartFri: row[10] ? String(row[10]).trim() : undefined,
       checkOutEndFri: row[11] ? String(row[11]).trim() : undefined,
+      sandi: row[12] ? String(row[12]).trim() : undefined,
     }));
 }
 
@@ -469,8 +471,9 @@ export async function addEmployee(spreadsheetId: string, accessToken: string, em
     employee.checkOutEndMonThu || '',
     employee.checkOutStartFri || '',
     employee.checkOutEndFri || '',
+    employee.sandi || '',
   ]];
-  return await appendSheetValues(spreadsheetId, accessToken, 'Pegawai!A:L', row);
+  return await appendSheetValues(spreadsheetId, accessToken, 'Pegawai!A:M', row);
 }
 
 /**
@@ -517,7 +520,8 @@ export async function updateEmployee(
 
   let rowIndex = -1;
   for (let i = 1; i < rows.length; i++) {
-    if (rows[i][0] === employee.id) {
+    const rowId = rows[i] && rows[i][0] ? String(rows[i][0]).trim() : '';
+    if (rowId === String(employee.id).trim()) {
       rowIndex = i + 1;
       break;
     }
@@ -527,7 +531,7 @@ export async function updateEmployee(
     throw new Error(`Pegawai dengan ID ${employee.id} tidak ditemukan.`);
   }
 
-  const range = `Pegawai!A${rowIndex}:L${rowIndex}`;
+  const range = `Pegawai!A${rowIndex}:M${rowIndex}`;
   const row = [[
     employee.id,
     employee.name,
@@ -541,6 +545,7 @@ export async function updateEmployee(
     employee.checkOutEndMonThu || '',
     employee.checkOutStartFri || '',
     employee.checkOutEndFri || '',
+    employee.sandi || '',
   ]];
   return await writeSheetValues(spreadsheetId, accessToken, range, row);
 }

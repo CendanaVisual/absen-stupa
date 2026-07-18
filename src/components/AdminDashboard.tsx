@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { motion } from 'motion/react';
 import { 
   Users, Calendar, MapPin, Settings, Plus, Search, Filter, Trash, Edit, Palette,
@@ -182,6 +182,7 @@ export default function AdminDashboard({
   const [newEmpRoleCustomVal, setNewEmpRoleCustomVal] = useState('');
   const [newEmpEmail, setNewEmpEmail] = useState('');
   const [newEmpSalary, setNewEmpSalary] = useState<number>(4000000);
+  const [newEmpSandi, setNewEmpSandi] = useState('123456');
   const [empSubmitting, setEmpSubmitting] = useState(false);
   const [empSuccess, setEmpSuccess] = useState<string | null>(null);
 
@@ -193,6 +194,7 @@ export default function AdminDashboard({
   const [editEmpRoleCustomVal, setEditEmpRoleCustomVal] = useState('');
   const [editEmpEmail, setEditEmpEmail] = useState('');
   const [editEmpSalary, setEditEmpSalary] = useState<number>(0);
+  const [editEmpSandi, setEditEmpSandi] = useState('');
   const [editEmpInStart, setEditEmpInStart] = useState('');
   const [editEmpInEnd, setEditEmpInEnd] = useState('');
   const [editEmpOutStartMonThu, setEditEmpOutStartMonThu] = useState('');
@@ -248,6 +250,26 @@ export default function AdminDashboard({
   const [fbStorageBucket, setFbStorageBucket] = useState(initialFb?.storageBucket || '');
   const [fbMessagingSenderId, setFbMessagingSenderId] = useState(initialFb?.messagingSenderId || '');
   const [fbOAuthClientId, setFbOAuthClientId] = useState(initialFb?.oAuthClientId || '');
+
+  useEffect(() => {
+    if (schoolConfig) {
+      setSchoolName(schoolConfig.name || '');
+      setSchoolAddress(schoolConfig.address || '');
+      setSchoolLat(schoolConfig.latitude || -8.70008);
+      setSchoolLng(schoolConfig.longitude || 115.21200);
+      setSchoolRad(schoolConfig.radius || 100);
+      setCheckInStart(schoolConfig.checkInStart || '06:00');
+      setCheckInEnd(schoolConfig.checkInEnd || '07:45');
+      setCheckOutStartMonThu(schoolConfig.checkOutStartMonThu || '15:00');
+      setCheckOutEndMonThu(schoolConfig.checkOutEndMonThu || '18:00');
+      setCheckOutStartFri(schoolConfig.checkOutStartFri || '13:00');
+      setCheckOutEndFri(schoolConfig.checkOutEndFri || '16:00');
+      setDisableSatSun(schoolConfig.disableSatSun !== false);
+      setHolidays(schoolConfig.holidays || []);
+      setLatePenaltyPerMinute(schoolConfig.latePenaltyPerMinute || 1000);
+      setEarlyPenaltyPerMinute(schoolConfig.earlyPenaltyPerMinute || 1000);
+    }
+  }, [schoolConfig]);
 
   const handleAutoExtractFirebaseConfig = () => {
     if (!fbPastedConfig.trim()) return;
@@ -788,6 +810,7 @@ export default function AdminDashboard({
         role: finalRole,
         email: newEmpEmail.trim().toLowerCase(),
         baseSalary: Number(newEmpSalary) || 0,
+        sandi: newEmpSandi.trim() || '123456',
       };
 
       await addEmployee(spreadsheetId, accessToken, emp);
@@ -796,6 +819,7 @@ export default function AdminDashboard({
       setNewEmpId('');
       setNewEmpName('');
       setNewEmpEmail('');
+      setNewEmpSandi('123456');
       setNewEmpRoleCustomVal('');
       setNewEmpRoleIsCustom(false);
       setNewEmpRole('Guru Kelas');
@@ -827,6 +851,7 @@ export default function AdminDashboard({
     
     setEditEmpEmail(emp.email);
     setEditEmpSalary(emp.baseSalary || 4000000);
+    setEditEmpSandi(emp.sandi || '');
     setEditEmpInStart(emp.checkInStart || '');
     setEditEmpInEnd(emp.checkInEnd || '');
     setEditEmpOutStartMonThu(emp.checkOutStartMonThu || '');
@@ -852,6 +877,7 @@ export default function AdminDashboard({
         role: finalRole,
         email: editEmpEmail.trim().toLowerCase(),
         baseSalary: Number(editEmpSalary) || 0,
+        sandi: editEmpSandi.trim(),
         checkInStart: editEmpInStart || undefined,
         checkInEnd: editEmpInEnd || undefined,
         checkOutStartMonThu: editEmpOutStartMonThu || undefined,
@@ -1140,13 +1166,18 @@ export default function AdminDashboard({
   });
 
   return (
-    <div className="relative overflow-hidden p-4 md:p-6 bg-slate-50 border border-slate-200 rounded-xl">
-      {/* Background Motif */}
+    <div className="relative overflow-hidden p-4 md:p-8 bg-gradient-to-br from-slate-50 via-white to-slate-50 border border-slate-200/60 rounded-2xl shadow-sm">
+      {/* Subtle luxury light glow effects */}
+      <div className="absolute -top-40 -left-40 w-96 h-96 rounded-full bg-amber-500/5 blur-3xl pointer-events-none"></div>
+      <div className="absolute -bottom-40 -right-40 w-96 h-96 rounded-full bg-blue-500/5 blur-3xl pointer-events-none"></div>
+      
+
+
+      {/* Premium Luxury Background Image with Soft Tint & Cover scale */}
       <div 
-        className="absolute inset-0 pointer-events-none z-0 opacity-50 bg-repeat" 
+        className="absolute inset-0 pointer-events-none z-0 opacity-[0.12] bg-cover bg-center transition-all duration-500" 
         style={{ 
-          backgroundImage: `url("${schoolConfig.backgroundUrl || 'https://images.unsplash.com/photo-1544816155-12df9643f363?auto=format&fit=crop&q=80&w=1200'} ")`,
-          backgroundSize: '240px'
+          backgroundImage: `url("${schoolConfig.backgroundUrl || 'https://images.unsplash.com/photo-1544816155-12df9643f363?auto=format&fit=crop&q=80&w=1200'}")`
         }}
       />
 
@@ -1722,7 +1753,7 @@ export default function AdminDashboard({
               )}
 
               <div>
-                <label className="block text-[10px] font-bold text-slate-500 uppercase tracking-wider mb-1 pl-1">Email Akun Google</label>
+                <label className="block text-[10px] font-bold text-slate-500 uppercase tracking-wider mb-1 pl-1">Email Google</label>
                 <input
                   type="email"
                   required
@@ -1733,7 +1764,23 @@ export default function AdminDashboard({
                   id="input-new-emp-email"
                 />
                 <p className="text-[10px] text-slate-400 mt-1 pl-1">
-                  * Harus sesuai dengan email akun Google yang akan digunakan pegawai saat login absensi.
+                  * Email Google pegawai.
+                </p>
+              </div>
+
+              <div>
+                <label className="block text-[10px] font-bold text-slate-500 uppercase tracking-wider mb-1 pl-1">Sandi / Password Login</label>
+                <input
+                  type="text"
+                  required
+                  placeholder="Masukkan password untuk login pegawai"
+                  value={newEmpSandi}
+                  onChange={(e) => setNewEmpSandi(e.target.value)}
+                  className="w-full px-2.5 py-1.5 bg-slate-50 border border-slate-200 rounded text-xs focus:outline-none focus:border-blue-500 focus:bg-white text-slate-700 font-semibold"
+                  id="input-new-emp-sandi"
+                />
+                <p className="text-[10px] text-slate-400 mt-1 pl-1">
+                  * Sandi ini digunakan pegawai untuk masuk ke portal absensi.
                 </p>
               </div>
 
@@ -2392,18 +2439,52 @@ export default function AdminDashboard({
                       onChange={(e) => {
                         const file = e.target.files?.[0];
                         if (file) {
-                          if (file.size > 2 * 1024 * 1024) {
-                            alert("Ukuran file logo maksimal adalah 2MB");
-                            return;
-                          }
                           const reader = new FileReader();
-                          reader.onloadend = () => {
-                            const base64String = reader.result as string;
-                            const updatedConfig = {
-                              ...schoolConfig,
-                              logoUrl: base64String
+                          reader.onload = (event) => {
+                            const img = new Image();
+                            img.onload = () => {
+                              const canvas = document.createElement('canvas');
+                              const max_size = 120; // compact logo size is perfect
+                              let width = img.width;
+                              let height = img.height;
+                              if (width > height) {
+                                if (width > max_size) {
+                                  height *= max_size / width;
+                                  width = max_size;
+                                }
+                              } else {
+                                if (height > max_size) {
+                                  width *= max_size / height;
+                                  height = max_size;
+                                }
+                              }
+                              canvas.width = width;
+                              canvas.height = height;
+                              const ctx = canvas.getContext('2d');
+                              if (ctx) {
+                                ctx.drawImage(img, 0, 0, width, height);
+                                const base64String = canvas.toDataURL('image/jpeg', 0.7);
+                                const updatedConfig = {
+                                  ...schoolConfig,
+                                  logoUrl: base64String
+                                };
+                                onUpdateSchoolConfig(updatedConfig);
+                              } else {
+                                const base64String = event.target?.result as string;
+                                const updatedConfig = {
+                                  ...schoolConfig,
+                                  logoUrl: base64String
+                                };
+                                onUpdateSchoolConfig(updatedConfig);
+                              }
                             };
-                            onUpdateSchoolConfig(updatedConfig);
+                            img.onerror = () => {
+                              alert("Gagal memproses file gambar logo.");
+                            };
+                            img.src = event.target?.result as string;
+                          };
+                          reader.onerror = () => {
+                            alert("Gagal membaca file logo.");
                           };
                           reader.readAsDataURL(file);
                         }
@@ -2442,18 +2523,52 @@ export default function AdminDashboard({
                       onChange={(e) => {
                         const file = e.target.files?.[0];
                         if (file) {
-                          if (file.size > 3 * 1024 * 1024) {
-                            alert("Ukuran file background kustom maksimal adalah 3MB");
-                            return;
-                          }
                           const reader = new FileReader();
-                          reader.onloadend = () => {
-                            const base64String = reader.result as string;
-                            const updatedConfig = {
-                              ...schoolConfig,
-                              backgroundUrl: base64String
+                          reader.onload = (event) => {
+                            const img = new Image();
+                            img.onload = () => {
+                              const canvas = document.createElement('canvas');
+                              const max_size = 480; // compact background size is perfect since it is faded (opacity 12%)
+                              let width = img.width;
+                              let height = img.height;
+                              if (width > height) {
+                                if (width > max_size) {
+                                  height *= max_size / width;
+                                  width = max_size;
+                                }
+                              } else {
+                                if (height > max_size) {
+                                  width *= max_size / height;
+                                  height = max_size;
+                                }
+                              }
+                              canvas.width = width;
+                              canvas.height = height;
+                              const ctx = canvas.getContext('2d');
+                              if (ctx) {
+                                ctx.drawImage(img, 0, 0, width, height);
+                                const base64String = canvas.toDataURL('image/jpeg', 0.5);
+                                const updatedConfig = {
+                                  ...schoolConfig,
+                                  backgroundUrl: base64String
+                                };
+                                onUpdateSchoolConfig(updatedConfig);
+                              } else {
+                                const base64String = event.target?.result as string;
+                                const updatedConfig = {
+                                  ...schoolConfig,
+                                  backgroundUrl: base64String
+                                };
+                                onUpdateSchoolConfig(updatedConfig);
+                              }
                             };
-                            onUpdateSchoolConfig(updatedConfig);
+                            img.onerror = () => {
+                              alert("Gagal memproses file gambar background.");
+                            };
+                            img.src = event.target?.result as string;
+                          };
+                          reader.onerror = () => {
+                            alert("Gagal membaca file background.");
                           };
                           reader.readAsDataURL(file);
                         }
@@ -2799,7 +2914,7 @@ export default function AdminDashboard({
                 Mengedit data untuk Pegawai dengan NIP: <strong className="font-mono">{editingEmployee.id}</strong>. NIP tidak dapat diubah karena merupakan kunci database.
               </div>
 
-              <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+              <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
                 <div>
                   <label className="block text-[10px] font-bold text-slate-500 uppercase tracking-wider mb-1 pl-1">Nama Lengkap & Gelar</label>
                   <input
@@ -2811,13 +2926,23 @@ export default function AdminDashboard({
                   />
                 </div>
                 <div>
-                  <label className="block text-[10px] font-bold text-slate-500 uppercase tracking-wider mb-1 pl-1">Email Akun Google</label>
+                  <label className="block text-[10px] font-bold text-slate-500 uppercase tracking-wider mb-1 pl-1">Email Google</label>
                   <input
                     type="email"
                     required
                     value={editEmpEmail}
                     onChange={(e) => setEditEmpEmail(e.target.value)}
                     className="w-full px-2.5 py-1.5 bg-slate-50 border border-slate-200 rounded text-xs focus:outline-none focus:border-blue-500 focus:bg-white text-slate-700 font-mono"
+                  />
+                </div>
+                <div>
+                  <label className="block text-[10px] font-bold text-slate-500 uppercase tracking-wider mb-1 pl-1">Sandi / Password Login</label>
+                  <input
+                    type="text"
+                    required
+                    value={editEmpSandi}
+                    onChange={(e) => setEditEmpSandi(e.target.value)}
+                    className="w-full px-2.5 py-1.5 bg-slate-50 border border-slate-200 rounded text-xs focus:outline-none focus:border-blue-500 focus:bg-white text-slate-700 font-semibold"
                   />
                 </div>
               </div>
